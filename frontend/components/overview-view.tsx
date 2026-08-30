@@ -6,6 +6,7 @@ import {
   getDetectionReadiness,
   getMerchantAudit,
   getOverview,
+  runExperimentToDecision,
   startNewAutopilotCycle,
 } from "@/lib/api";
 import { RECENT_ACTIVITY_LIMIT } from "@/lib/constants";
@@ -20,10 +21,16 @@ import { PaymentMethodTable } from "./payment-method-table";
 import { RecentActivity } from "./recent-activity";
 import { SegmentConversionChart } from "./segment-conversion-chart";
 
+function isOneClickExperimentAction(action: string | null): boolean {
+  return action === "RUN_EXPERIMENT_BATCH" || action === "EVALUATE_EXPERIMENT";
+}
+
 /**
  * Overview client state container. Task 21B tracks detector readiness beside
  * the lifecycle read model so an exhausted historical revision becomes an
- * explicit wait-for-data product state rather than another Scan button.
+ * explicit wait-for-data product state. Task 21C routes runtime/evaluation
+ * states through one backend run-to-decision operation, so a merchant never
+ * has to click Run batch repeatedly to reach the fixed horizon.
  */
 export function OverviewView({
   initialOverview,
@@ -69,9 +76,33 @@ export function OverviewView({
   const handleAction = useCallback(async () => {
     setError(null);
     setActionLoading(true);
-    let step: Awaited<ReturnType<typeof advanceAutopilot>>;
+
     try {
-      step = await advanceAutopilot(merchantId);
+      if (isOneClickExperimentAction(status.next_action)) {
+        const experimentId = status.latest_experiment_id;
+        if (!experimentId) {
+          throw new Error("No active experiment is available to run.");
+        }
+        const result = await runExperimentToDecision(experimentId);
+        setRestartAvailable(false);
+        setStepMessage(
+          `Experiment reached ${result.control_attempts}/${result.sample_target_per_variant} control and ${result.treatment_attempts}/${result.sample_target_per_variant} treatment observations. Decision ${result.decision}.`,
+        );
+        setViewCycleHref(
+          status.latest_opportunity_id
+            ? `/autopilot/${status.latest_opportunity_id}`
+            : null,
+        );
+      } else {
+        const step = await advanceAutopilot(merchantId);
+        setRestartAvailable(step.step === "DEPLOYMENT_BLOCKED");
+        setStepMessage(step.message);
+        setViewCycleHref(
+          step.entity_type === "opportunity" && step.entity_id
+            ? `/autopilot/${step.entity_id}`
+            : null,
+        );
+      }
     } catch (caught) {
       setStepMessage(null);
       setError(describeApiError(caught));
@@ -79,13 +110,7 @@ export function OverviewView({
       setActionLoading(false);
       return;
     }
-    setRestartAvailable(step.step === "DEPLOYMENT_BLOCKED");
-    setStepMessage(step.message);
-    setViewCycleHref(
-      step.entity_type === "opportunity" && step.entity_id
-        ? `/autopilot/${step.entity_id}`
-        : null,
-    );
+
     try {
       await refreshOverviewAndAudit();
     } catch (caught) {
@@ -94,7 +119,7 @@ export function OverviewView({
     } finally {
       setActionLoading(false);
     }
-  }, [merchantId, refreshOverviewAndAudit]);
+  }, [merchantId, refreshOverviewAndAudit, status]);
 
   const handleStartNewCycle = useCallback(async () => {
     setError(null);
@@ -270,9 +295,9 @@ function lifecycleLabel(
     case "POLICY_REJECTED":
       return "Rejected";
     case "RUNNING":
-      return "Running";
+      return "Ready to run";
     case "EVALUATION_PENDING":
-      return "Evaluating";
+      return "Ready to evaluate";
     case "COMPLETED":
       return latestExperimentStatus
         ? formatStatusLabel(latestExperimentStatus)
