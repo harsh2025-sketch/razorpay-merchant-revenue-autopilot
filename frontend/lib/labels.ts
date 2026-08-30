@@ -355,73 +355,114 @@ export function auditEventSummary(
         .filter(Boolean)
         .join(" · ");
     }
-    case "POLICY_APPROVED": {
-      const intervention = asText(data.intervention_type);
-      return intervention ? `Approved ${intervention}` : "Experiment authorized within merchant policy";
-    }
+    case "POLICY_APPROVED":
+      return "Experiment authorized within merchant policy limits";
     case "POLICY_REJECTED": {
-      const violations = Array.isArray(data.violations)
-        ? data.violations.map(asText).filter(Boolean).join(", ")
-        : "";
-      return violations ? `Rejected · ${violations}` : "Experiment blocked by merchant policy";
+      const violations = Array.isArray(data.violations) ? data.violations : [];
+      const codes = violations.filter((v): v is string => typeof v === "string");
+      return codes.length
+        ? `Rejected: ${codes.join(", ")}`
+        : "Rejected by deterministic merchant policy";
     }
     case "RAZORPAY_RESOURCE_CREATED": {
-      const id = asText(data.razorpay_id) || asText(data.resource_id);
-      return id ? `Created Test Mode resource ${id}` : "Created Razorpay Test Mode resource";
+      const id = asText(data.razorpay_id);
+      const type = asText(data.resource_type);
+      return [type, id, "created in Razorpay Test Mode"].filter(Boolean).join(" ");
     }
-    case "EXPERIMENT_STARTED":
-      return "Fixed-horizon experimental traffic started";
+    case "EXPERIMENT_STARTED": {
+      const control = asText(data.control_target);
+      const treatment = asText(data.treatment_target);
+      return control && treatment
+        ? `Runtime started · targets ${control} control / ${treatment} treatment`
+        : "Experiment runtime started";
+    }
     case "EXPERIMENT_COMPLETED": {
       const decision = asText(data.decision);
-      const pValue = typeof data.p_value === "number" ? data.p_value.toFixed(4) : "";
-      return [decision ? `Decision ${decision}` : "Fixed-horizon evaluation completed", pValue ? `p=${pValue}` : ""]
+      const p =
+        typeof data.p_value === "number" && data.p_value < 0.001
+          ? "< 0.001"
+          : typeof data.p_value === "number"
+            ? data.p_value.toFixed(4)
+            : "";
+      return [decision ? `Fixed-horizon decision ${decision}` : "Fixed-horizon evaluation recorded", p ? `· p ${p}` : ""]
         .filter(Boolean)
-        .join(" · ");
-    }
-    case "TREATMENT_PROMOTED": {
-      const version = asText(data.champion_version);
-      return version ? `Treatment promoted to Champion v${version}` : "Treatment promoted to champion";
+        .join(" ");
     }
     case "EXPERIMENT_ROLLED_BACK":
-      return "Statistical rollback completed";
+      return "Treatment cancelled after ROLLBACK decision";
     case "RAZORPAY_RESOURCE_CANCELLED": {
-      const id = asText(data.razorpay_id) || asText(data.resource_id);
-      return id ? `Cancelled Test Mode resource ${id}` : "Cancelled Razorpay Test Mode resource";
+      const id = asText(data.razorpay_id);
+      return id ? `Razorpay resource ${id} cancelled` : "Razorpay resource cancelled";
     }
-    default:
-      return "Recorded lifecycle event";
+    case "TREATMENT_PROMOTED":
+      return "Treatment retained after KEEP decision";
+    default: {
+      // Unknown sanitized event: show safe scalar fields only.
+      const scalars = Object.entries(data)
+        .filter(([, v]) => ["string", "number", "boolean"].includes(typeof v))
+        .slice(0, 3)
+        .map(([k, v]) => `${k}: ${asText(v)}`);
+      return scalars.length ? scalars.join(" · ") : "Lifecycle event recorded";
+    }
   }
 }
 
 // ---------------------------------------------------------------------------
-// Small lifecycle labels used by experiment plan / status surfaces
+// Policy violation codes
 // ---------------------------------------------------------------------------
+
+export const VIOLATION_LABELS: Record<string, string> = {
+  INTERVENTION_NOT_ALLOWED: "Intervention not allowed",
+  TREATMENT_EXPOSURE_EXCEEDED: "Treatment exposure exceeds merchant limit",
+  DISCOUNT_LIMIT_EXCEEDED: "Discount exceeds merchant limit",
+  MIN_MARGIN_VIOLATED: "Minimum margin requirement violated",
+  FINANCIAL_EXPOSURE_EXCEEDED: "Financial exposure exceeds merchant limit",
+  MIN_SAMPLE_NOT_MET: "Experiment sample size below policy minimum",
+  DURATION_EXCEEDED: "Experiment duration exceeds merchant limit",
+  CONCURRENT_EXPERIMENT_LIMIT: "Concurrent experiment limit reached",
+  SEGMENT_EXPERIMENT_CONFLICT: "Another experiment is active for this segment",
+  INVALID_EXPERIMENT_CONFIG: "Experiment configuration invalid",
+};
+
+export function violationLabel(code: string): string {
+  return VIOLATION_LABELS[code] ?? code;
+}
+
+// ---------------------------------------------------------------------------
+// Status / stage vocabulary
+// ---------------------------------------------------------------------------
+
+export const EXPERIMENT_STATUS_LABELS: Record<ExperimentStatus, string> = {
+  proposed: "Proposed",
+  approved: "Approved",
+  running: "Running",
+  rejected: "Rejected",
+  completed: "Completed",
+  rolled_back: "Rolled back",
+  cancelled: "Cancelled",
+};
 
 export function experimentStatusLabel(status: ExperimentStatus): string {
-  switch (status) {
-    case "proposed":
-      return "Planned";
-    case "approved":
-      return "Approved";
-    case "running":
-      return "Running";
-    case "rejected":
-      return "Rejected";
-    case "completed":
-      return "Completed";
-    case "rolled_back":
-      return "Rolled back";
-    case "cancelled":
-      return "Cancelled";
-  }
+  return EXPERIMENT_STATUS_LABELS[status] ?? status;
 }
 
-export function statisticalDecisionLabel(
-  decision: StatisticalDecision | null,
-): string {
-  return decision ?? "Pending";
-}
+export const DECISION_BADGES: Record<
+  StatisticalDecision,
+  { label: string; tone: "green" | "red" | "amber" }
+> = {
+  KEEP: { label: "KEEP", tone: "green" },
+  ROLLBACK: { label: "ROLLBACK", tone: "red" },
+  INCONCLUSIVE: { label: "INCONCLUSIVE", tone: "amber" },
+};
 
-export function actorIdLabel(actor: ActorId): string {
-  return ACTOR_LABELS[actor] ?? actor;
+/** Intervention type → merchant-readable name. */
+export const INTERVENTION_LABELS: Record<string, string> = {
+  payment_method_config: "Payment method configuration",
+  offer_discount: "Checkout offer discount",
+  partial_payment: "Partial payment",
+  expiry_config: "Payment link expiry",
+};
+
+export function interventionLabel(type: string): string {
+  return INTERVENTION_LABELS[type] ?? humanizeUpper(type);
 }
