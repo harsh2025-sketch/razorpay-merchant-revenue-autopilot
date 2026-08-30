@@ -4,8 +4,8 @@ A completed, rejected, or safely abandoned pre-deployment cycle remains fully
 persisted. Starting another cycle never deletes payment attempts, experiments,
 results, resources, or audit history. Instead this module closes the current
 opportunity, cancels an approved experiment only when no treatment resource was
-created, then resumes another already-started opportunity or selects the best
-untouched candidate through the deterministic opportunity portfolio.
+created, then resumes another already-detected opportunity or runs the existing
+deterministic detector again.
 
 This is deliberately separate from ``app.services.autopilot`` so the audited
 one-step orchestration and all Tasks 07-15 decision boundaries remain unchanged.
@@ -23,7 +23,6 @@ from sqlalchemy.orm import Session
 from app.db.models import Experiment, Opportunity
 from app.engines.opportunities import run_opportunity_detection
 from app.services import autopilot
-from app.services.portfolio import build_opportunity_portfolio
 
 
 RESTARTABLE_ACTIONS = frozenset(
@@ -84,27 +83,6 @@ def _cancel_undeployed_experiment(
     db.flush()
 
 
-def _next_portfolio_focus(db: Session, merchant_id: str) -> Opportunity | None:
-    """Resume started work first; otherwise choose the ranked untouched candidate."""
-    focus = autopilot.focus_opportunity(db, merchant_id)
-    if focus is None:
-        return None
-
-    # ``focus_opportunity`` already prefers the active opportunity furthest
-    # along the pipeline. If it has entered diagnosis, never re-rank it behind
-    # a new candidate; interruption-safe resume remains the stronger invariant.
-    if autopilot.latest_hypothesis(db, focus.id) is not None:
-        return focus
-
-    portfolio = build_opportunity_portfolio(db, merchant_id)
-    if portfolio.next_best_opportunity_id is None:
-        # Missing/empty policy should not make the existing lifecycle vanish.
-        # Return the old deterministic focus so the normal policy/configuration
-        # boundary can surface the problem explicitly.
-        return focus
-    return db.get(Opportunity, portfolio.next_best_opportunity_id) or focus
-
-
 def start_new_cycle(db: Session, merchant_id: str) -> Opportunity | None:
     """Close the terminal/safely-undeployed focus cycle and return the next one.
 
@@ -116,12 +94,10 @@ def start_new_cycle(db: Session, merchant_id: str) -> Opportunity | None:
       explicitly abandoned and is marked ``cancelled`` so policy concurrency
       stays truthful. This is the durable state seen after deployment is
       blocked by missing/unsupported resource configuration.
-    - If another already-started active opportunity exists, it is resumed
-      before any untouched candidate.
-    - Untouched active opportunities are selected by the deterministic Task 19B
-      portfolio instead of detector severity alone.
-    - If no active candidate remains, the existing deterministic detector runs
-      again and its untouched results are ranked by the same portfolio.
+    - If another previously detected active opportunity exists, it becomes the
+      next focus without creating a duplicate.
+    - Otherwise the existing deterministic detector is run again against the
+      merchant's current observable payment data.
     - Nothing commits here; the API boundary owns the transaction.
     """
     autopilot.get_merchant(db, merchant_id)
@@ -129,7 +105,7 @@ def start_new_cycle(db: Session, merchant_id: str) -> Opportunity | None:
     current = autopilot.focus_opportunity(db, merchant_id)
     if current is None:
         run_opportunity_detection(db, merchant_id)
-        return _next_portfolio_focus(db, merchant_id)
+        return autopilot.focus_opportunity(db, merchant_id)
 
     transition = autopilot.resolve_transition(db, merchant_id)
     if transition.action not in RESTARTABLE_ACTIONS or not _is_restartable(db, transition):
@@ -143,12 +119,12 @@ def start_new_cycle(db: Session, merchant_id: str) -> Opportunity | None:
     current.status = "resolved"
     db.flush()
 
-    # Prefer another active opportunity from the same observation pass before
-    # scanning again. Started work always resumes; untouched work is portfolio-
-    # ranked so experiment traffic goes to the highest current candidate.
-    next_focus = _next_portfolio_focus(db, merchant_id)
+    # Prefer another already-detected opportunity from the same observation
+    # pass before scanning again. This avoids manufacturing duplicates when
+    # the detector originally surfaced more than one valid segment.
+    next_focus = autopilot.focus_opportunity(db, merchant_id)
     if next_focus is not None:
         return next_focus
 
     run_opportunity_detection(db, merchant_id)
-    return _next_portfolio_focus(db, merchant_id)
+    return autopilot.focus_opportunity(db, merchant_id)

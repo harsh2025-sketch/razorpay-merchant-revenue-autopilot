@@ -21,7 +21,7 @@ from app.db.models import (
     PolicyDecision,
 )
 from app.services import autopilot
-from app.services.cycles import _next_portfolio_focus, start_new_cycle
+from app.services.cycles import start_new_cycle
 
 
 @pytest.fixture
@@ -202,7 +202,7 @@ def test_start_new_cycle_uses_portfolio_instead_of_raw_severity(db: Session):
     selected = start_new_cycle(db, "merchant-a")
 
     assert current.status == "resolved"
-    assert autopilot.focus_opportunity(db, "merchant-a") is alpha
+    assert autopilot.focus_opportunity(db, "merchant-a") is beta
     assert selected is beta
     assert selected.id == "opp-beta"
 
@@ -237,7 +237,7 @@ def test_started_cycle_resume_beats_portfolio_ranking(db: Session):
     )
     db.flush()
 
-    selected = _next_portfolio_focus(db, "merchant-a")
+    selected = autopilot.focus_opportunity(db, "merchant-a")
 
     assert selected is started
     assert selected is not untouched
@@ -265,7 +265,7 @@ def test_missing_policy_falls_back_to_existing_focus(tmp_path: Path):
             gap=0.20,
         )
 
-        selected = _next_portfolio_focus(db, "merchant-a")
+        selected = autopilot.focus_opportunity(db, "merchant-a")
 
         assert selected is first
     finally:
