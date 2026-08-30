@@ -1,4 +1,4 @@
-"""One-click fixed-horizon experiment orchestration (Task 21C).
+"""One-click fixed-horizon experiment orchestration (Task 21C / Task 22).
 
 This service deliberately coordinates existing boundaries instead of replacing
 them:
@@ -9,9 +9,15 @@ them:
         -> existing statistics engine
         -> KEEP / ROLLBACK / INCONCLUSIVE
 
-It never calls OpenAI, Razorpay, the policy engine, or the sealed causal model
-directly. The Task 11 runtime remains the only simulation boundary and the
-Task 12 statistics engine remains the only decision boundary.
+The deterministic runtime is the sealed TechBazaar evaluation world. Task 22
+makes that boundary explicit: an uploaded merchant can never be silently routed
+through TechBazaar's synthetic causal model. Real merchants must eventually be
+measured from assigned real payment outcomes supplied by a production payment-
+event integration.
+
+This service never calls OpenAI, Razorpay, the policy engine, or the sealed
+causal model directly. The Task 11 runtime remains the only simulation boundary
+and the Task 12 statistics engine remains the only decision boundary.
 """
 
 from __future__ import annotations
@@ -29,6 +35,7 @@ from app.db.models import (
 )
 from app.engines.statistics import evaluate_experiment_results
 from app.services.experiments import execute_experiment_batch
+from app.services.onboarding import TECHBAZAAR_MERCHANT_ID
 from app.simulation.runner import MAX_BATCH_SIZE
 
 
@@ -39,6 +46,10 @@ PAYMENT_LINK_RESOURCE = "payment_link"
 
 class OneClickExperimentError(Exception):
     """Raised when a run-to-decision request cannot safely proceed."""
+
+
+class LiveExperimentTrafficRequired(OneClickExperimentError):
+    """Uploaded merchants must be measured from real assigned payment outcomes."""
 
 
 @dataclass(frozen=True)
@@ -128,13 +139,17 @@ def run_experiment_to_decision(
     seed: int = 20260827,
     max_runtime_batches: int = ONE_CLICK_MAX_RUNTIME_BATCHES,
 ) -> OneClickExperimentResult:
-    """Drive one authorized/deployed experiment to its fixed-horizon decision.
+    """Drive one authorized TechBazaar experiment to its fixed-horizon decision.
 
     The operation is idempotent after a result exists. Before runtime starts it
     requires the same persisted authorization and deployed treatment evidence
     that the ordinary Autopilot state machine relies on. Each internal runtime
     call is capped by Task 11's existing ``MAX_BATCH_SIZE`` and stops early as
     soon as both variants reach the configured target.
+
+    Task 22 deliberately refuses to synthesize outcomes for any merchant other
+    than the canonical TechBazaar evaluation merchant. Doing otherwise would
+    turn a benchmark causal model into fabricated production evidence.
 
     No commit occurs here. The API boundary owns the transaction, so a runtime
     or statistics failure rolls the whole one-click operation back rather than
@@ -178,6 +193,12 @@ def run_experiment_to_decision(
     target = int(experiment.min_sample_per_variant)
     if target <= 0:
         raise OneClickExperimentError("experiment sample target must be positive")
+
+    if experiment.merchant_id != TECHBAZAAR_MERCHANT_ID:
+        raise LiveExperimentTrafficRequired(
+            "uploaded merchants require assigned real experiment outcomes; "
+            "the TechBazaar synthetic runtime is evaluation-only"
+        )
 
     generated_total = 0
     batches = 0
@@ -229,6 +250,7 @@ def run_experiment_to_decision(
 
 __all__ = [
     "ONE_CLICK_MAX_RUNTIME_BATCHES",
+    "LiveExperimentTrafficRequired",
     "OneClickExperimentError",
     "OneClickExperimentResult",
     "run_experiment_to_decision",
