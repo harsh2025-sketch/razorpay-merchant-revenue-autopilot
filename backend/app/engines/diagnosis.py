@@ -46,6 +46,11 @@ from app.services.audit import (
     HYPOTHESIS_PROPOSED,
     record_audit_event_once,
 )
+from app.services.diagnosis_memory import (
+    build_diagnosis_memory,
+    prompt_memory_payload,
+    stale_repeat_reason,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -76,6 +81,7 @@ ACTIVE_HYPOTHESIS_STATUS = "proposed"
 #: diagnosis has no external financial side effect, and nothing is persisted
 #: until a proposal has passed schema + semantic validation.
 STRUCTURED_OUTPUT_MAX_ATTEMPTS = 2
+MEMORY_PROPOSAL_MAX_ATTEMPTS = 2
 
 #: Top-level evidence keys that are flattened verbatim into the catalog.
 _CATALOG_SCALAR_KEYS: tuple[str, ...] = (
@@ -347,6 +353,7 @@ def _build_prompt_messages(
     opportunity: Opportunity,
     evidence_catalog: dict[str, object],
     allowed_interventions: set[str],
+    experiment_memory: Sequence[dict[str, object]] = (),
 ) -> list[dict[str, str]]:
     """Build the model prompt from observable opportunity data only."""
     allowed = sorted(allowed_interventions)
@@ -362,6 +369,7 @@ def _build_prompt_messages(
         },
         "evidence_catalog": evidence_catalog,
         "allowed_interventions": allowed,
+        "experiment_memory": list(experiment_memory),
         "intervention_param_contracts": {
             name: INTERVENTION_PARAM_CONTRACTS[name] for name in allowed
         },
@@ -373,6 +381,11 @@ def _build_prompt_messages(
         "- Use only the evidence in evidence_catalog. Do not invent metrics.\n"
         "- evidence_refs must exactly match keys of evidence_catalog.\n"
         "- Choose exactly one intervention_type from allowed_interventions.\n"
+        "- experiment_memory contains prior observed experiment outcomes. Exact "
+        "configs with repeat_blocked=true must not be proposed again.\n"
+        "- A different semantic configuration of the same intervention remains "
+        "allowed when it satisfies the intervention contract.\n"
+        "- Treat experiment history as observed evidence, never causal certainty.\n"
         "- intervention_params must follow intervention_param_contracts; they "
         "are semantic parameters, never Razorpay payloads.\n\n"
         f"{json.dumps(context, indent=2, sort_keys=True, default=str)}\n"
@@ -595,6 +608,13 @@ def diagnose_opportunity(
         )
 
     evidence_catalog = build_evidence_catalog(opportunity)
+    memory_trials = build_diagnosis_memory(
+        db,
+        opportunity,
+        evidence_catalog,
+        evidence_catalog_builder=build_evidence_catalog,
+    )
+    memory_payload = prompt_memory_payload(memory_trials)
 
     if client is None:
         if not settings.OPENAI_API_KEY:
@@ -604,13 +624,55 @@ def diagnose_opportunity(
             )
         client = OpenAI(api_key=settings.OPENAI_API_KEY)
 
-    messages = _build_prompt_messages(opportunity, evidence_catalog, allowed_interventions)
-    proposal = _request_proposal(client, settings.OPENAI_MODEL, messages)
-    proposal = validate_proposal(proposal, evidence_catalog, allowed_interventions)
+    messages = _build_prompt_messages(
+        opportunity,
+        evidence_catalog,
+        allowed_interventions,
+        memory_payload,
+    )
+    accepted_proposal: HypothesisProposal | None = None
+    last_repeat_reason: str | None = None
+    for attempt in range(MEMORY_PROPOSAL_MAX_ATTEMPTS):
+        proposal = _request_proposal(client, settings.OPENAI_MODEL, messages)
+        proposal = validate_proposal(
+            proposal,
+            evidence_catalog,
+            allowed_interventions,
+        )
+        repeat_reason = stale_repeat_reason(
+            memory_trials,
+            intervention_type=proposal.intervention_type,
+            intervention_params=proposal.intervention_params,
+        )
+        if repeat_reason is None:
+            accepted_proposal = proposal
+            break
+
+        last_repeat_reason = repeat_reason
+        if attempt + 1 >= MEMORY_PROPOSAL_MAX_ATTEMPTS:
+            break
+        messages = [
+            *messages,
+            {
+                "role": "user",
+                "content": (
+                    "Deterministic memory validation rejected the proposed exact "
+                    f"repeat: {repeat_reason}. Propose a materially different "
+                    "semantic configuration or a different allowed intervention. "
+                    "Continue to use only evidence_catalog and do not invent metrics."
+                ),
+            },
+        ]
+
+    if accepted_proposal is None:
+        raise DiagnosisOutputInvalidError(
+            "AI proposal repeats blocked prior experiment: "
+            f"{last_repeat_reason or 'stale experiment history'}"
+        )
 
     return persist_hypothesis(
         db,
         opportunity=opportunity,
-        proposal=proposal,
+        proposal=accepted_proposal,
         ai_model=settings.OPENAI_MODEL,
     )
