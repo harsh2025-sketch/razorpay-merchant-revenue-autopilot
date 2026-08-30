@@ -11,6 +11,7 @@ on:
         options:
           - fresh
           - resume
+          - adaptive
       expected_opportunity_id:
         description: Optional active opportunity guard for resume mode
         required: false
@@ -26,9 +27,10 @@ jobs:
     if: >-
       github.event_name == 'workflow_dispatch' ||
       contains(github.event.head_commit.message, '[production-verify]') ||
-      contains(github.event.head_commit.message, '[production-verify-resume:')
+      contains(github.event.head_commit.message, '[production-verify-resume:') ||
+      contains(github.event.head_commit.message, '[production-verify-v2]')
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 15
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -45,7 +47,11 @@ jobs:
           HEAD_COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
         shell: bash
         run: |
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.mode }}" == "resume" ]]; then
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.mode }}" == "adaptive" ]]; then
+            python scripts/verify_production_v2.py --confirm-writes
+          elif [[ "$HEAD_COMMIT_MESSAGE" == *"[production-verify-v2]"* ]]; then
+            python scripts/verify_production_v2.py --confirm-writes
+          elif [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.mode }}" == "resume" ]]; then
             EXPECTED_OPPORTUNITY_ID="$DISPATCH_EXPECTED_OPPORTUNITY_ID" \
               python scripts/resume_production_journey.py --confirm-writes
           elif [[ "$HEAD_COMMIT_MESSAGE" == *"[production-verify-resume:"* ]]; then
