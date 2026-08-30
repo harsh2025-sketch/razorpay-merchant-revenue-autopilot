@@ -100,7 +100,7 @@ export function autopilotStatusSentence(
     case "POLICY_REVIEW_PENDING":
       return "The proposed experiment is awaiting merchant policy authorization.";
     case "DEPLOYMENT_PENDING":
-      return "Policy approved. The treatment is ready for Razorpay Test Mode deployment.";
+      return "Policy approved. The treatment is ready for the configured execution boundary.";
     case "DEPLOYMENT_BLOCKED":
       return "Deployment is blocked because this intervention cannot yet be safely mapped to a verified Razorpay resource.";
     case "POLICY_REJECTED":
@@ -258,213 +258,90 @@ export const ACTOR_LABELS: Record<string, string> = {
   system: "System",
 };
 
-export function actorLabel(actor: string): string {
-  return ACTOR_LABELS[actor] ?? actor;
-}
-
-/** Actor groups behind the Audit Log client-side filters. */
-export const AUDIT_FILTERS: { id: string; label: string; actors: string[] }[] = [
-  { id: "all", label: "All", actors: [] },
-  { id: "detector", label: "Detector", actors: ["detector"] },
-  { id: "ai", label: "AI", actors: ["ai"] },
-  { id: "policy", label: "Policy", actors: ["policy"] },
-  { id: "razorpay", label: "Razorpay", actors: ["razorpay_executor"] },
-  { id: "statistics", label: "Statistics", actors: ["statistics"] },
-];
-
-// ---------------------------------------------------------------------------
-// Audit event names + one-line summaries
-// ---------------------------------------------------------------------------
-
-export const EVENT_LABELS: Record<string, string> = {
-  OPPORTUNITY_DETECTED: "Opportunity detected",
-  AI_DIAGNOSIS_CREATED: "AI diagnosis created",
-  HYPOTHESIS_PROPOSED: "Hypothesis proposed",
-  EXPERIMENT_PLANNED: "Experiment planned",
-  POLICY_APPROVED: "Policy approved",
-  POLICY_REJECTED: "Policy rejected",
-  RAZORPAY_RESOURCE_CREATED: "Razorpay resource created",
-  EXPERIMENT_STARTED: "Experiment started",
-  EXPERIMENT_COMPLETED: "Experiment completed",
-  TREATMENT_PROMOTED: "Treatment promoted",
-  EXPERIMENT_ROLLED_BACK: "Experiment rolled back",
-  RAZORPAY_RESOURCE_CANCELLED: "Razorpay resource cancelled",
-};
-
 export function eventLabel(eventType: string): string {
-  return EVENT_LABELS[eventType] ?? humanizeUpper(eventType);
-}
-
-function humanizeUpper(value: string): string {
-  return value
-    .toLowerCase()
-    .split("_")
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+  const words = eventType.toLowerCase().split("_");
+  return words
+    .map((word, index) => (index === 0 ? word[0]?.toUpperCase() + word.slice(1) : word))
     .join(" ");
 }
 
-function asText(value: unknown): string {
-  if (value == null) return "";
-  if (typeof value === "string") return value;
-  if (typeof value === "number" || typeof value === "boolean") {
-    return String(value);
-  }
-  return "";
+const VIOLATION_LABELS: Record<string, string> = {
+  INTERVENTION_NOT_ALLOWED: "Intervention is not allowed for this merchant",
+  TREATMENT_EXPOSURE_EXCEEDED: "Treatment exposure exceeds merchant limit",
+  DISCOUNT_LIMIT_EXCEEDED: "Discount exceeds merchant limit",
+  MIN_MARGIN_VIOLATED: "Minimum margin requirement violated",
+  FINANCIAL_EXPOSURE_EXCEEDED: "Financial exposure exceeds merchant limit",
+  SAMPLE_SIZE_TOO_SMALL: "Sample size is below merchant minimum",
+  DURATION_LIMIT_EXCEEDED: "Experiment duration exceeds merchant limit",
+  CONCURRENT_EXPERIMENT_LIMIT_REACHED: "Concurrent experiment limit reached",
+  SEGMENT_CONFLICT: "Another active experiment already targets this segment",
+  INVALID_INTERVENTION_CONFIG: "Intervention configuration is invalid",
+  INVALID_CONTROL_CONFIG: "Control configuration is invalid",
+};
+
+export function violationLabel(code: string): string {
+  return VIOLATION_LABELS[code] ?? eventLabel(code);
 }
 
-/**
- * One concise, factual summary line per audit event, built only from the
- * sanitized payload the API already exposes.
- */
 export function auditEventSummary(
   eventType: string,
   data: Record<string, unknown>,
 ): string {
   switch (eventType) {
     case "OPPORTUNITY_DETECTED": {
-      const segment = asText(data.segment);
-      const severity = typeof data.severity === "number" ? data.severity.toFixed(2) : null;
-      const type = asText(data.type) || "conversion opportunity";
-      return [
-        segment ? `Segment ${segment}` : "Segment unavailable",
-        `flagged for ${type}`,
-        severity ? `· severity ${severity}` : "",
-      ]
-        .filter(Boolean)
-        .join(" ");
+      const segment = typeof data.segment === "string" ? data.segment : "segment";
+      const severity = typeof data.severity === "number" ? data.severity.toFixed(2) : "n/a";
+      return `Segment ${segment} flagged for segment_conversion_divergence · severity ${severity}`;
     }
     case "AI_DIAGNOSIS_CREATED": {
-      const model = asText(data.ai_model);
-      return model ? `Validated LLM proposal via ${model}` : "Validated LLM proposal recorded";
+      const model = typeof data.ai_model === "string" ? data.ai_model : "configured model";
+      return `Validated LLM proposal via ${model}`;
     }
     case "HYPOTHESIS_PROPOSED": {
-      const intervention = asText(data.intervention_type);
-      const confidence = asText(data.confidence);
-      return [
-        intervention ? `Proposed ${intervention} intervention` : "Intervention proposed",
-        confidence ? `· confidence ${confidence}` : "",
-      ]
-        .filter(Boolean)
-        .join(" ");
+      const intervention =
+        typeof data.intervention_type === "string" ? data.intervention_type : "intervention";
+      const confidence = typeof data.confidence === "string" ? data.confidence : "unknown";
+      return `Proposed ${intervention} intervention · confidence ${confidence}`;
     }
     case "EXPERIMENT_PLANNED": {
-      const segment = asText(data.segment);
-      const split =
+      const segment = typeof data.segment === "string" ? data.segment : "segment";
+      const exposure =
         typeof data.traffic_split_treatment_pct === "number"
-          ? `${(data.traffic_split_treatment_pct * 100).toFixed(0)}% treatment exposure`
-          : "";
-      return [segment ? `Experiment plan for ${segment}` : "Experiment plan created", split]
-        .filter(Boolean)
-        .join(" · ");
+          ? `${(data.traffic_split_treatment_pct * 100).toFixed(0)}%`
+          : "n/a";
+      return `Experiment plan for ${segment} · ${exposure} treatment exposure`;
     }
     case "POLICY_APPROVED":
       return "Experiment authorized within merchant policy limits";
     case "POLICY_REJECTED": {
-      const violations = Array.isArray(data.violations) ? data.violations : [];
-      const codes = violations.filter((v): v is string => typeof v === "string");
-      return codes.length
-        ? `Rejected: ${codes.join(", ")}`
-        : "Rejected by deterministic merchant policy";
+      const violations = Array.isArray(data.violations) ? data.violations.join(", ") : "policy violations";
+      return `Experiment rejected · ${violations}`;
     }
     case "RAZORPAY_RESOURCE_CREATED": {
-      const id = asText(data.razorpay_id);
-      const type = asText(data.resource_type);
-      return [type, id, "created in Razorpay Test Mode"].filter(Boolean).join(" ");
+      const resource = typeof data.resource_type === "string" ? data.resource_type : "resource";
+      const id = typeof data.razorpay_id === "string" ? data.razorpay_id : "unknown";
+      const hostedDemo = id.startsWith("demo_");
+      return hostedDemo
+        ? `${resource} ${id} created in hosted demo mode (simulated)`
+        : `${resource} ${id} created in Razorpay Test Mode`;
     }
     case "EXPERIMENT_STARTED": {
-      const control = asText(data.control_target);
-      const treatment = asText(data.treatment_target);
-      return control && treatment
-        ? `Runtime started · targets ${control} control / ${treatment} treatment`
-        : "Experiment runtime started";
+      const control = typeof data.control_target === "number" ? data.control_target : "n/a";
+      const treatment = typeof data.treatment_target === "number" ? data.treatment_target : "n/a";
+      return `Runtime started · targets ${control} control / ${treatment} treatment`;
     }
     case "EXPERIMENT_COMPLETED": {
-      const decision = asText(data.decision);
-      const p =
-        typeof data.p_value === "number" && data.p_value < 0.001
-          ? "< 0.001"
-          : typeof data.p_value === "number"
-            ? data.p_value.toFixed(4)
-            : "";
-      return [decision ? `Fixed-horizon decision ${decision}` : "Fixed-horizon evaluation recorded", p ? `· p ${p}` : ""]
-        .filter(Boolean)
-        .join(" ");
+      const decision = typeof data.decision === "string" ? data.decision : "unknown";
+      const pValue = typeof data.p_value === "number" ? data.p_value.toFixed(4) : "n/a";
+      return `Fixed-horizon decision ${decision} · p ${pValue}`;
     }
     case "EXPERIMENT_ROLLED_BACK":
-      return "Treatment cancelled after ROLLBACK decision";
+      return "Experiment treatment rolled back after statistical decision";
     case "RAZORPAY_RESOURCE_CANCELLED": {
-      const id = asText(data.razorpay_id);
-      return id ? `Razorpay resource ${id} cancelled` : "Razorpay resource cancelled";
+      const id = typeof data.razorpay_id === "string" ? data.razorpay_id : "resource";
+      return `${id} cancelled`;
     }
-    case "TREATMENT_PROMOTED":
-      return "Treatment retained after KEEP decision";
-    default: {
-      // Unknown sanitized event: show safe scalar fields only.
-      const scalars = Object.entries(data)
-        .filter(([, v]) => ["string", "number", "boolean"].includes(typeof v))
-        .slice(0, 3)
-        .map(([k, v]) => `${k}: ${asText(v)}`);
-      return scalars.length ? scalars.join(" · ") : "Lifecycle event recorded";
-    }
+    default:
+      return eventLabel(eventType);
   }
-}
-
-// ---------------------------------------------------------------------------
-// Policy violation codes
-// ---------------------------------------------------------------------------
-
-export const VIOLATION_LABELS: Record<string, string> = {
-  INTERVENTION_NOT_ALLOWED: "Intervention not allowed",
-  TREATMENT_EXPOSURE_EXCEEDED: "Treatment exposure exceeds merchant limit",
-  DISCOUNT_LIMIT_EXCEEDED: "Discount exceeds merchant limit",
-  MIN_MARGIN_VIOLATED: "Minimum margin requirement violated",
-  FINANCIAL_EXPOSURE_EXCEEDED: "Financial exposure exceeds merchant limit",
-  MIN_SAMPLE_NOT_MET: "Experiment sample size below policy minimum",
-  DURATION_EXCEEDED: "Experiment duration exceeds merchant limit",
-  CONCURRENT_EXPERIMENT_LIMIT: "Concurrent experiment limit reached",
-  SEGMENT_EXPERIMENT_CONFLICT: "Another experiment is active for this segment",
-  INVALID_EXPERIMENT_CONFIG: "Experiment configuration invalid",
-};
-
-export function violationLabel(code: string): string {
-  return VIOLATION_LABELS[code] ?? code;
-}
-
-// ---------------------------------------------------------------------------
-// Status / stage vocabulary
-// ---------------------------------------------------------------------------
-
-export const EXPERIMENT_STATUS_LABELS: Record<ExperimentStatus, string> = {
-  proposed: "Proposed",
-  approved: "Approved",
-  running: "Running",
-  rejected: "Rejected",
-  completed: "Completed",
-  rolled_back: "Rolled back",
-  cancelled: "Cancelled",
-};
-
-export function experimentStatusLabel(status: ExperimentStatus): string {
-  return EXPERIMENT_STATUS_LABELS[status] ?? status;
-}
-
-export const DECISION_BADGES: Record<
-  StatisticalDecision,
-  { label: string; tone: "green" | "red" | "amber" }
-> = {
-  KEEP: { label: "KEEP", tone: "green" },
-  ROLLBACK: { label: "ROLLBACK", tone: "red" },
-  INCONCLUSIVE: { label: "INCONCLUSIVE", tone: "amber" },
-};
-
-/** Intervention type → merchant-readable name. */
-export const INTERVENTION_LABELS: Record<string, string> = {
-  payment_method_config: "Payment method configuration",
-  offer_discount: "Checkout offer discount",
-  partial_payment: "Partial payment",
-  expiry_config: "Payment link expiry",
-};
-
-export function interventionLabel(type: string): string {
-  return INTERVENTION_LABELS[type] ?? humanizeUpper(type);
 }
