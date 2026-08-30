@@ -23,8 +23,8 @@ export const ACTION_LABELS: Record<AutopilotNextAction, string> = {
   EVALUATE_POLICY: "Run Policy Check",
   DEPLOY_TREATMENT: "Deploy Treatment",
   CONFIGURE_OFFER_MAPPING: "Deployment Blocked",
-  RUN_EXPERIMENT_BATCH: "Run Next Batch",
-  EVALUATE_EXPERIMENT: "Evaluate Results",
+  RUN_EXPERIMENT_BATCH: "Run Experiment",
+  EVALUATE_EXPERIMENT: "Run Experiment",
   ROLLBACK_TREATMENT: "Roll Back Treatment",
   STOP: "",
   DONE: "Cycle Complete",
@@ -39,8 +39,8 @@ export const ACTION_LOADING_LABELS: Partial<
   EVALUATE_POLICY: "Checking policy…",
   DEPLOY_TREATMENT: "Deploying…",
   CONFIGURE_OFFER_MAPPING: "Checking deployment…",
-  RUN_EXPERIMENT_BATCH: "Running batch…",
-  EVALUATE_EXPERIMENT: "Evaluating…",
+  RUN_EXPERIMENT_BATCH: "Running to fixed horizon…",
+  EVALUATE_EXPERIMENT: "Evaluating fixed horizon…",
   ROLLBACK_TREATMENT: "Rolling back…",
   DONE: "Completing…",
 };
@@ -53,8 +53,8 @@ export const ACTION_ACTORS: Record<AutopilotNextAction, string | null> = {
   EVALUATE_POLICY: "Policy Engine",
   DEPLOY_TREATMENT: "Razorpay Executor",
   CONFIGURE_OFFER_MAPPING: "Razorpay Executor",
-  RUN_EXPERIMENT_BATCH: "Experiment Runtime",
-  EVALUATE_EXPERIMENT: "Statistical Engine",
+  RUN_EXPERIMENT_BATCH: "Runtime + Statistics",
+  EVALUATE_EXPERIMENT: "Runtime + Statistics",
   ROLLBACK_TREATMENT: "Razorpay Executor",
   STOP: null,
   DONE: null,
@@ -106,9 +106,9 @@ export function autopilotStatusSentence(
     case "POLICY_REJECTED":
       return "Merchant policy rejected the proposed experiment.";
     case "RUNNING":
-      return "The experiment is running toward its fixed sample horizon.";
+      return "The approved experiment is ready to run to its fixed sample horizon and evaluate in one action.";
     case "EVALUATION_PENDING":
-      return "Both cohorts reached the sample target. Statistical evaluation is ready.";
+      return "Both cohorts reached the fixed sample horizon. Run Experiment will record the statistical decision without adding more traffic.";
     case "COMPLETED":
       switch (decision) {
         case "KEEP":
@@ -182,7 +182,7 @@ export function actorStripStages(
       done.push("detector", "ai", "planner");
       break;
     case "RUNNING":
-      done.push("detector", "ai", "planner", "policy");
+      done.push("detector", "ai", "planner", "policy", "razorpay");
       break;
     case "EVALUATION_PENDING":
       done.push("detector", "ai", "planner", "policy", "razorpay");
@@ -221,8 +221,6 @@ export function actorStripStages(
       tone = "rejected";
       break;
     case "RUNNING":
-      current = nextAction === "EVALUATE_EXPERIMENT" ? "statistics" : "razorpay";
-      break;
     case "EVALUATION_PENDING":
       current = "statistics";
       break;
@@ -357,114 +355,73 @@ export function auditEventSummary(
         .filter(Boolean)
         .join(" · ");
     }
-    case "POLICY_APPROVED":
-      return "Experiment authorized within merchant policy limits";
+    case "POLICY_APPROVED": {
+      const intervention = asText(data.intervention_type);
+      return intervention ? `Approved ${intervention}` : "Experiment authorized within merchant policy";
+    }
     case "POLICY_REJECTED": {
-      const violations = Array.isArray(data.violations) ? data.violations : [];
-      const codes = violations.filter((v): v is string => typeof v === "string");
-      return codes.length
-        ? `Rejected: ${codes.join(", ")}`
-        : "Rejected by deterministic merchant policy";
+      const violations = Array.isArray(data.violations)
+        ? data.violations.map(asText).filter(Boolean).join(", ")
+        : "";
+      return violations ? `Rejected · ${violations}` : "Experiment blocked by merchant policy";
     }
     case "RAZORPAY_RESOURCE_CREATED": {
-      const id = asText(data.razorpay_id);
-      const type = asText(data.resource_type);
-      return [type, id, "created in Razorpay Test Mode"].filter(Boolean).join(" ");
+      const id = asText(data.razorpay_id) || asText(data.resource_id);
+      return id ? `Created Test Mode resource ${id}` : "Created Razorpay Test Mode resource";
     }
-    case "EXPERIMENT_STARTED": {
-      const control = asText(data.control_target);
-      const treatment = asText(data.treatment_target);
-      return control && treatment
-        ? `Runtime started · targets ${control} control / ${treatment} treatment`
-        : "Experiment runtime started";
-    }
+    case "EXPERIMENT_STARTED":
+      return "Fixed-horizon experimental traffic started";
     case "EXPERIMENT_COMPLETED": {
       const decision = asText(data.decision);
-      const p =
-        typeof data.p_value === "number" && data.p_value < 0.001
-          ? "< 0.001"
-          : typeof data.p_value === "number"
-            ? data.p_value.toFixed(4)
-            : "";
-      return [decision ? `Fixed-horizon decision ${decision}` : "Fixed-horizon evaluation recorded", p ? `· p ${p}` : ""]
+      const pValue = typeof data.p_value === "number" ? data.p_value.toFixed(4) : "";
+      return [decision ? `Decision ${decision}` : "Fixed-horizon evaluation completed", pValue ? `p=${pValue}` : ""]
         .filter(Boolean)
-        .join(" ");
+        .join(" · ");
+    }
+    case "TREATMENT_PROMOTED": {
+      const version = asText(data.champion_version);
+      return version ? `Treatment promoted to Champion v${version}` : "Treatment promoted to champion";
     }
     case "EXPERIMENT_ROLLED_BACK":
-      return "Treatment cancelled after ROLLBACK decision";
+      return "Statistical rollback completed";
     case "RAZORPAY_RESOURCE_CANCELLED": {
-      const id = asText(data.razorpay_id);
-      return id ? `Razorpay resource ${id} cancelled` : "Razorpay resource cancelled";
+      const id = asText(data.razorpay_id) || asText(data.resource_id);
+      return id ? `Cancelled Test Mode resource ${id}` : "Cancelled Razorpay Test Mode resource";
     }
-    case "TREATMENT_PROMOTED":
-      return "Treatment retained after KEEP decision";
-    default: {
-      // Unknown sanitized event: show safe scalar fields only.
-      const scalars = Object.entries(data)
-        .filter(([, v]) => ["string", "number", "boolean"].includes(typeof v))
-        .slice(0, 3)
-        .map(([k, v]) => `${k}: ${asText(v)}`);
-      return scalars.length ? scalars.join(" · ") : "Lifecycle event recorded";
-    }
+    default:
+      return "Recorded lifecycle event";
   }
 }
 
 // ---------------------------------------------------------------------------
-// Policy violation codes
+// Small lifecycle labels used by experiment plan / status surfaces
 // ---------------------------------------------------------------------------
-
-export const VIOLATION_LABELS: Record<string, string> = {
-  INTERVENTION_NOT_ALLOWED: "Intervention not allowed",
-  TREATMENT_EXPOSURE_EXCEEDED: "Treatment exposure exceeds merchant limit",
-  DISCOUNT_LIMIT_EXCEEDED: "Discount exceeds merchant limit",
-  MIN_MARGIN_VIOLATED: "Minimum margin requirement violated",
-  FINANCIAL_EXPOSURE_EXCEEDED: "Financial exposure exceeds merchant limit",
-  MIN_SAMPLE_NOT_MET: "Experiment sample size below policy minimum",
-  DURATION_EXCEEDED: "Experiment duration exceeds merchant limit",
-  CONCURRENT_EXPERIMENT_LIMIT: "Concurrent experiment limit reached",
-  SEGMENT_EXPERIMENT_CONFLICT: "Another experiment is active for this segment",
-  INVALID_EXPERIMENT_CONFIG: "Experiment configuration invalid",
-};
-
-export function violationLabel(code: string): string {
-  return VIOLATION_LABELS[code] ?? code;
-}
-
-// ---------------------------------------------------------------------------
-// Status / stage vocabulary
-// ---------------------------------------------------------------------------
-
-export const EXPERIMENT_STATUS_LABELS: Record<ExperimentStatus, string> = {
-  proposed: "Proposed",
-  approved: "Approved",
-  running: "Running",
-  rejected: "Rejected",
-  completed: "Completed",
-  rolled_back: "Rolled back",
-  cancelled: "Cancelled",
-};
 
 export function experimentStatusLabel(status: ExperimentStatus): string {
-  return EXPERIMENT_STATUS_LABELS[status] ?? status;
+  switch (status) {
+    case "proposed":
+      return "Planned";
+    case "approved":
+      return "Approved";
+    case "running":
+      return "Running";
+    case "rejected":
+      return "Rejected";
+    case "completed":
+      return "Completed";
+    case "rolled_back":
+      return "Rolled back";
+    case "cancelled":
+      return "Cancelled";
+  }
 }
 
-export const DECISION_BADGES: Record<
-  StatisticalDecision,
-  { label: string; tone: "green" | "red" | "amber" }
-> = {
-  KEEP: { label: "KEEP", tone: "green" },
-  ROLLBACK: { label: "ROLLBACK", tone: "red" },
-  INCONCLUSIVE: { label: "INCONCLUSIVE", tone: "amber" },
-};
+export function statisticalDecisionLabel(
+  decision: StatisticalDecision | null,
+): string {
+  return decision ?? "Pending";
+}
 
-/** Intervention type → merchant-readable name. */
-export const INTERVENTION_LABELS: Record<string, string> = {
-  payment_method_config: "Payment method configuration",
-  offer_discount: "Checkout offer discount",
-  partial_payment: "Partial payment",
-  expiry_config: "Payment link expiry",
-};
-
-export function interventionLabel(type: string): string {
-  return INTERVENTION_LABELS[type] ?? humanizeUpper(type);
+export function actorIdLabel(actor: ActorId): string {
+  return ACTOR_LABELS[actor] ?? actor;
 }
