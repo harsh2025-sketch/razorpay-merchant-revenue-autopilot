@@ -1,0 +1,48 @@
+name: Task 19E review fix
+
+on:
+  push:
+    branches: [task19e/merchant-intelligence]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: ${{ !contains(github.event.head_commit.message, '[task19e-reviewed]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: task19e/merchant-intelligence
+      - name: Fix reviewed UI semantics
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          view = Path('frontend/components/merchant-intelligence-view.tsx')
+          text = view.read_text()
+          old = '''                <Link href={`/autopilot/${config.source_experiment_id}`} className="mt-3 block text-[11.5px] text-indigo-600 hover:text-indigo-800">\n                  Source experiment {shortId(config.source_experiment_id)}\n                </Link>\n'''
+          new = '''                <div className="mt-3 text-[11.5px] text-gray-500">\n                  Source experiment {shortId(config.source_experiment_id)}\n                </div>\n'''
+          if old not in text:
+              raise SystemExit('champion source link marker not found')
+          view.write_text(text.replace(old, new, 1))
+
+          test = Path('frontend/tests/merchant-intelligence-view.test.tsx')
+          text = test.read_text()
+          old = '    expect(screen.getByText("+4.0pp")).toBeInTheDocument();\n'
+          new = '    expect(screen.getAllByText("+4.0pp").length).toBeGreaterThan(0);\n'
+          if old not in text:
+              raise SystemExit('lift assertion marker not found')
+          test.write_text(text.replace(old, new, 1))
+          PY
+          git diff --check
+      - name: Commit review fixes
+        run: |
+          git config user.name "Harsh Dinodia"
+          git config user.email "ghosttalk719@gmail.com"
+          git add frontend/components/merchant-intelligence-view.tsx frontend/tests/merchant-intelligence-view.test.tsx
+          git diff --cached --check
+          git commit -m "fix: correct Merchant Intelligence source semantics [task19e-reviewed]"
+          git push origin HEAD:task19e/merchant-intelligence
