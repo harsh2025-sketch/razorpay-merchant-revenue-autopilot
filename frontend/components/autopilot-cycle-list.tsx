@@ -52,6 +52,17 @@ function opportunityStage(
   }
 }
 
+function focusBadge(state: AutopilotState | null): string {
+  if (
+    state === "COMPLETED" ||
+    state === "POLICY_REJECTED" ||
+    state === "DEPLOYMENT_BLOCKED"
+  ) {
+    return "Latest cycle";
+  }
+  return "Current cycle";
+}
+
 /**
  * One row per persisted opportunity (= one lifecycle cycle). Restrained
  * bordered rows, no kanban, no pipeline columns.
@@ -90,7 +101,7 @@ export function AutopilotCycleList({
                 <span className="text-[14px] font-semibold text-gray-900">
                   {opportunity.segment ?? "Unknown segment"} segment
                 </span>
-                {isLatest && <StatusBadge tone="indigo">Current cycle</StatusBadge>}
+                {isLatest && <StatusBadge tone="indigo">{focusBadge(state)}</StatusBadge>}
                 <StatusBadge tone={stage.tone}>{stage.label}</StatusBadge>
               </div>
               <p className="mt-1 text-[12.5px] text-gray-500">
