@@ -22,3 +22,11 @@ export interface DemoPeriodResult {
   simulated_observations: number;
   segment_count: number;
 }
+
+export interface DetectionReadiness {
+  merchant_id: string;
+  ready: boolean;
+  reason: "EMPTY_DATA" | "INITIAL_DATA" | "NEW_DATA" | "WAITING_FOR_NEW_DATA" | string;
+  latest_opportunity_at: string | null;
+  latest_data_append_at: string | null;
+}
