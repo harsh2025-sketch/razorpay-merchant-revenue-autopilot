@@ -6,8 +6,8 @@ results, resources, or audit history.
 
 Task 21B adds one crucial product invariant: once every opportunity from an
 observation pass has been consumed, Autopilot may not run the detector again
-until a successful data-append revision exists after that pass. This prevents
-unchanged historical data from being replayed as if it were new evidence.
+until the historical observation revision changes. A durable detector marker
+also makes zero-opportunity passes non-repeatable.
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ from sqlalchemy.orm import Session
 from app.db.models import Experiment, Opportunity
 from app.engines.opportunities import run_opportunity_detection
 from app.services import autopilot
-from app.services.incremental_data import has_new_data_since
+from app.services.incremental_data import detection_readiness
 
 
 RESTARTABLE_ACTIONS = frozenset(
@@ -84,11 +84,11 @@ def _resolve_stale_active_opportunities(
     *,
     older_than: datetime,
 ) -> None:
-    """Retire waiting opportunities from an older observation pass.
+    """Retire waiting opportunities from an older observation revision.
 
-    If new merchant data arrived after a detector pass, its still-waiting
-    opportunities carry stale evidence. They are preserved but resolved before
-    a fresh detector pass is allowed to create updated opportunities.
+    When new data arrives while an earlier pass still has untouched waiting
+    opportunities, those rows keep their historical evidence for audit but are
+    resolved before the updated dataset is scanned.
     """
     (
         db.query(Opportunity)
@@ -100,23 +100,22 @@ def _resolve_stale_active_opportunities(
     db.flush()
 
 
-def _detect_only_if_new_evidence(
+def _detect_if_revision_ready(
     db: Session,
     merchant_id: str,
     *,
-    previous_pass: Opportunity | None,
+    stale_before: datetime | None = None,
 ) -> Opportunity | None:
-    """Run detection for the first pass or after a durable data append only."""
-    if previous_pass is not None and not has_new_data_since(
-        db, merchant_id, previous_pass.created_at
-    ):
+    """Run one detector pass only when the historical revision is unconsumed."""
+    readiness = detection_readiness(db, merchant_id)
+    if not readiness.ready:
         return None
 
-    if previous_pass is not None:
+    if stale_before is not None:
         _resolve_stale_active_opportunities(
             db,
             merchant_id,
-            older_than=previous_pass.created_at,
+            older_than=stale_before,
         )
 
     run_opportunity_detection(db, merchant_id)
@@ -134,10 +133,11 @@ def start_new_cycle(db: Session, merchant_id: str) -> Opportunity | None:
       abandoned and is marked ``cancelled``.
     - Without new merchant data, another opportunity already detected in the
       same observation pass may be used, but the detector is never run again.
-    - When new data arrived after the previous detector pass, remaining stale
-      waiting opportunities are resolved and the detector runs once against
-      the updated merchant state.
-    - The first-ever detector pass is always allowed.
+    - When the historical revision changed, remaining waiting opportunities
+      from the old pass are preserved as resolved and one new detector pass is
+      run against the updated merchant evidence.
+    - A detector pass with zero opportunities is still consumed and waits for
+      new data before another scan.
     - Nothing commits here; the API boundary owns the transaction.
     """
     autopilot.get_merchant(db, merchant_id)
@@ -146,11 +146,7 @@ def start_new_cycle(db: Session, merchant_id: str) -> Opportunity | None:
     latest_before = _latest_opportunity(db, merchant_id)
 
     if current is None:
-        return _detect_only_if_new_evidence(
-            db,
-            merchant_id,
-            previous_pass=latest_before,
-        )
+        return _detect_if_revision_ready(db, merchant_id)
 
     transition = autopilot.resolve_transition(db, merchant_id)
     if transition.action not in RESTARTABLE_ACTIONS or not _is_restartable(db, transition):
@@ -164,23 +160,19 @@ def start_new_cycle(db: Session, merchant_id: str) -> Opportunity | None:
     current.status = "resolved"
     db.flush()
 
-    # If a data append happened after this observation pass, every remaining
-    # waiting opportunity is stale. Re-detect from the updated dataset instead
-    # of driving an old snapshot.
-    if latest_before is not None and has_new_data_since(
-        db, merchant_id, latest_before.created_at
-    ):
-        _resolve_stale_active_opportunities(
+    readiness = detection_readiness(db, merchant_id)
+    if readiness.ready:
+        # A changed historical revision supersedes every untouched opportunity
+        # from the prior pass. ``latest_before`` is the newest row from that
+        # pass, so resolving through its timestamp retires the whole snapshot.
+        return _detect_if_revision_ready(
             db,
             merchant_id,
-            older_than=latest_before.created_at,
+            stale_before=(latest_before.created_at if latest_before is not None else None),
         )
-        run_opportunity_detection(db, merchant_id)
-        return autopilot.focus_opportunity(db, merchant_id)
 
-    # No new evidence: another opportunity from the same detector pass is
-    # legitimate, but once those are exhausted we stop instead of rescanning
-    # unchanged payment history.
+    # No new evidence: another waiting opportunity from the same detector pass
+    # remains legitimate. Once those are exhausted, stop and wait for data.
     next_focus = autopilot.focus_opportunity(db, merchant_id)
     if next_focus is not None:
         return next_focus
