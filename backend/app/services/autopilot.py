@@ -72,6 +72,7 @@ from app.services.executor import (
     deploy_experiment_treatment,
     rollback_experiment_treatment,
 )
+from app.services.portfolio import build_opportunity_portfolio
 
 # ---------------------------------------------------------------------------
 # Lifecycle vocabulary (mirrored as Literals in app.api.schemas)
@@ -482,11 +483,16 @@ def _opportunity_stage(db: Session, opportunity_id: str) -> int:
 
 
 def focus_opportunity(db: Session, merchant_id: str) -> Opportunity | None:
-    """The opportunity the Autopilot should drive right now.
+    """Return the one active opportunity Autopilot should drive now.
 
-    Deterministic: among active opportunities (severity desc, newest first,
-    id asc) prefer the one already furthest along the pipeline, so a
-    half-finished lifecycle is always resumed before a new one is started.
+    Started work always wins: among active opportunities, the lifecycle
+    stage (experiment > hypothesis > untouched) is considered before any
+    portfolio ranking so an interrupted cycle is resumed deterministically.
+
+    Only when every candidate is untouched does Task 19B choose among them
+    using the explainable opportunity portfolio. If portfolio selection is
+    unavailable (for example, merchant policy is missing), the historical
+    severity/newest/id ordering remains the fail-visible fallback.
     """
     candidates = (
         db.query(Opportunity)
@@ -499,13 +505,35 @@ def focus_opportunity(db: Session, merchant_id: str) -> Opportunity | None:
         )
         .all()
     )
-    best: Opportunity | None = None
-    best_stage = -1
-    for opportunity in candidates:
-        stage = _opportunity_stage(db, opportunity.id)
-        if stage > best_stage:
-            best, best_stage = opportunity, stage
-    return best
+    if not candidates:
+        return None
+
+    staged = [(opportunity, _opportunity_stage(db, opportunity.id)) for opportunity in candidates]
+    best_stage = max(stage for _, stage in staged)
+    if best_stage > 0:
+        # ``candidates`` already carries the deterministic legacy ordering.
+        # Ranking never displaces work that has entered diagnosis/planning.
+        return next(opportunity for opportunity, stage in staged if stage == best_stage)
+
+    untouched = [opportunity for opportunity, stage in staged if stage == 0]
+    portfolio = build_opportunity_portfolio(
+        db,
+        merchant_id,
+        opportunities=untouched,
+    )
+    if portfolio.next_best_opportunity_id is not None:
+        selected = next(
+            (
+                opportunity
+                for opportunity in untouched
+                if opportunity.id == portfolio.next_best_opportunity_id
+            ),
+            None,
+        )
+        if selected is not None:
+            return selected
+
+    return untouched[0]
 
 
 def _experiment_transition(db: Session, experiment: Experiment) -> _Transition:
