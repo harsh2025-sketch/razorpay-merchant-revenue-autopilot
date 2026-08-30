@@ -25,6 +25,8 @@ const ERROR_TITLES: Record<string, string> = {
     "The previous external operation is still unresolved. Automatic retry is disabled.",
   EXPERIMENT_NOT_READY:
     "The experiment has not reached its fixed sample target.",
+  LIVE_EXPERIMENT_TRAFFIC_REQUIRED:
+    "This uploaded merchant is awaiting assigned real experiment outcomes. Synthetic TechBazaar traffic is disabled.",
   NETWORK_ERROR: "Unable to connect to Revenue Autopilot.",
 };
 
@@ -33,6 +35,7 @@ const AMBER_CODES = new Set([
   "EXECUTION_STATE_CONFLICT",
   "DEPLOYMENT_CONFIG_UNSUPPORTED",
   "EXPERIMENT_NOT_READY",
+  "LIVE_EXPERIMENT_TRAFFIC_REQUIRED",
 ]);
 
 export function describeApiError(error: unknown): DescribedError {
