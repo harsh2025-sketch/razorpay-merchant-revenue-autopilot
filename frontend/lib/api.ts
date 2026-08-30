@@ -4,7 +4,11 @@ import type {
   MerchantDataStatus,
   OnboardedMerchant,
 } from "./onboarding-types";
-import type { DemoPeriodResult, IncrementalCsvResult } from "./data-types";
+import type {
+  DemoPeriodResult,
+  DetectionReadiness,
+  IncrementalCsvResult,
+} from "./data-types";
 import type {
   AuditEvent,
   AutopilotStep,
@@ -117,6 +121,12 @@ export function getOnboardingDataStatus(
   merchantId: string,
 ): Promise<MerchantDataStatus> {
   return request<MerchantDataStatus>(API_PATHS.onboardingDataStatus(merchantId));
+}
+
+export function getDetectionReadiness(
+  merchantId: string,
+): Promise<DetectionReadiness> {
+  return request<DetectionReadiness>(API_PATHS.detectionReadiness(merchantId));
 }
 
 // ---------------------------------------------------------------------------
