@@ -2,6 +2,19 @@ name: Production Journey Verification
 
 on:
   workflow_dispatch:
+    inputs:
+      mode:
+        description: Verification mode
+        required: true
+        default: fresh
+        type: choice
+        options:
+          - fresh
+          - resume
+      expected_opportunity_id:
+        description: Optional active opportunity guard for resume mode
+        required: false
+        type: string
   push:
     branches: [main]
 
@@ -27,4 +40,11 @@ jobs:
       - name: Verify deployed demo lifecycle
         env:
           BASE_URL: https://merchant-revenue-autopilot-api.onrender.com
-        run: python scripts/verify_production_journey.py --confirm-writes
+          EXPECTED_OPPORTUNITY_ID: ${{ inputs.expected_opportunity_id }}
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.mode }}" == "resume" ]]; then
+            python scripts/resume_production_journey.py --confirm-writes
+          else
+            python scripts/verify_production_journey.py --confirm-writes
+          fi
