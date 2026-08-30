@@ -6,8 +6,8 @@ import { makeAuditEvent, makeOverview } from "./fixtures";
 
 /**
  * Integration-style test for the Overview mutation loop: one click → exactly
- * one POST to the autopilot step → overview + recent audit refetched →
- * "View cycle" link appears for an opportunity entity.
+ * one POST to the autopilot step → overview + recent audit/readiness refetched
+ * → "View cycle" link appears for an opportunity entity.
  */
 
 const overviewA = makeOverview();
@@ -19,6 +19,13 @@ const overviewB = makeOverview({
   },
 });
 const audit = [makeAuditEvent()];
+const readiness = {
+  merchant_id: "merchant_techbazaar",
+  ready: true,
+  reason: "INITIAL_DATA",
+  latest_opportunity_at: null,
+  latest_data_append_at: null,
+};
 
 function jsonResponse(payload: unknown) {
   return new Response(JSON.stringify(payload), {
@@ -48,15 +55,11 @@ describe("OverviewView action loop", () => {
           }),
         );
       }
+      if (url.includes("/detection-readiness")) {
+        return Promise.resolve(jsonResponse(readiness));
+      }
       if (url.includes("/overview")) {
-        return Promise.resolve(
-          jsonResponse(
-            fetchMock.mock.calls.filter(([u]) => String(u).includes("/overview"))
-              .length === 1
-              ? overviewB
-              : overviewA,
-          ),
-        );
+        return Promise.resolve(jsonResponse(overviewB));
       }
       if (url.includes("/audit")) return Promise.resolve(jsonResponse(audit));
       return Promise.reject(new Error(`unexpected fetch ${url}`));
@@ -75,6 +78,7 @@ describe("OverviewView action loop", () => {
           },
         })}
         initialAudit={audit}
+        initialDetectionReady
       />,
     );
 
@@ -97,9 +101,8 @@ describe("OverviewView action loop", () => {
     const stepCalls = fetchMock.mock.calls.filter(([u]) =>
       String(u).includes("/autopilot/step"),
     ).length;
-    expect(stepCalls).toBe(stepCallsBefore + 1); // exactly one transition
+    expect(stepCalls).toBe(stepCallsBefore + 1);
 
-    // The status sentence updated from the refetched overview.
     await waitFor(() => {
       expect(
         screen.getByText(
@@ -125,6 +128,9 @@ describe("OverviewView action loop", () => {
           ),
         );
       }
+      if (url.includes("/detection-readiness")) {
+        return Promise.resolve(jsonResponse(readiness));
+      }
       if (url.includes("/overview")) {
         return Promise.resolve(jsonResponse(overviewA));
       }
@@ -143,6 +149,7 @@ describe("OverviewView action loop", () => {
           },
         })}
         initialAudit={audit}
+        initialDetectionReady
       />,
     );
 
@@ -158,7 +165,6 @@ describe("OverviewView action loop", () => {
       ).toBeInTheDocument();
     });
     expect(screen.getByRole("alert")).toBeInTheDocument();
-    // Raw backend objects and exception details are never printed.
     expect(screen.queryByText(/detail/i)).not.toBeInTheDocument();
   });
 });
