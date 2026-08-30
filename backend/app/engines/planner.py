@@ -56,6 +56,7 @@ from app.schemas.hypothesis import (
     PARTIAL_PAYMENT_MIN_MAX_PCT,
     PAYMENT_METHOD_KEYS,
 )
+from app.services.champion import champion_control_config
 
 # ---------------------------------------------------------------------------
 # Planner errors (small, no generic error framework)
@@ -399,4 +400,16 @@ def plan_experiment(db: Session, hypothesis_id: str) -> Experiment:
         )
 
     plan = build_experiment_plan(hypothesis=hypothesis, opportunity=opportunity)
+    champion_control, _champion_version, _champion_source = champion_control_config(
+        db,
+        merchant_id=hypothesis.merchant_id,
+        intervention_type=plan.intervention_type,
+        fallback_control=dict(plan.control_config),
+    )
+    if dict(plan.treatment_config) == champion_control:
+        raise ExperimentPlanningError(
+            "challenger configuration is identical to current champion"
+        )
+    if dict(plan.control_config) != champion_control:
+        plan = plan.model_copy(update={"control_config": champion_control})
     return persist_experiment_plan(db, plan)

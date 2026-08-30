@@ -12,8 +12,10 @@ from app.services.audit import (
     ACTOR_STATISTICS,
     ENTITY_EXPERIMENT,
     EXPERIMENT_COMPLETED,
+    TREATMENT_PROMOTED,
     record_audit_event_once,
 )
+from app.services.champion import get_merchant_champion_state
 
 ALPHA = 0.05
 PRACTICAL_ABSOLUTE_LIFT = 0.02
@@ -106,4 +108,21 @@ def evaluate_experiment_results(db: Session, experiment_id: str) -> ExperimentRe
         },
         actor=ACTOR_STATISTICS,
     )
+    if evaluation.decision == "KEEP":
+        champion = get_merchant_champion_state(db, experiment.merchant_id)
+        record_audit_event_once(
+            db,
+            merchant_id=experiment.merchant_id,
+            event_type=TREATMENT_PROMOTED,
+            entity_type=ENTITY_EXPERIMENT,
+            entity_id=experiment.id,
+            data={
+                "champion_version": champion.version,
+                "intervention_type": experiment.intervention_type,
+                "source_experiment_id": experiment.id,
+                "absolute_lift": evaluation.absolute_lift,
+                "p_value": evaluation.p_value,
+            },
+            actor=ACTOR_STATISTICS,
+        )
     return result
