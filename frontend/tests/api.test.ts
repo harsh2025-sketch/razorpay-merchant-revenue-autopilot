@@ -1,7 +1,13 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ApiError, advanceAutopilot, getOverview } from "@/lib/api";
+import {
+  ApiError,
+  advanceAutopilot,
+  getDemoMerchantSource,
+  getOverview,
+  onboardMerchantWithCsv,
+} from "@/lib/api";
 import { describeApiError } from "@/lib/errors";
 
 const overviewPayload = {
@@ -82,6 +88,62 @@ describe("api layer", () => {
     await advanceAutopilot("merchant_techbazaar");
     const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(init.method).toBe("POST");
+  });
+
+  it("resolves the explicit TechBazaar demo source", async () => {
+    const fetchMock = stubFetchOnce({
+      merchant_id: "merchant_techbazaar",
+      name: "TechBazaar Electronics",
+      data_source: "demo",
+      historical_observations: 100,
+      segment_count: 5,
+    });
+
+    const demo = await getDemoMerchantSource();
+
+    expect(demo.data_source).toBe("demo");
+    const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toContain("/api/v1/onboarding/demo");
+  });
+
+  it("sends onboarding CSV as multipart without a manual content-type", async () => {
+    const fetchMock = stubFetchOnce({
+      merchant_id: "merchant_acme",
+      name: "Acme Commerce",
+      category: "retail",
+      monthly_gmv_paise: 250000000,
+      created_at: null,
+      data_source: "merchant_csv",
+      rows_imported: 1,
+      historical_observations: 1,
+      real_observations: 1,
+      simulated_observations: 0,
+      segment_count: 1,
+    });
+    const file = new File(
+      ["external_id,amount_paise,status,created_at,segment,payment_method\np1,10000,captured,2026-08-01T10:00:00Z,mobile,upi\n"],
+      "payments.csv",
+      { type: "text/csv" },
+    );
+
+    const merchant = await onboardMerchantWithCsv({
+      name: "Acme Commerce",
+      category: "retail",
+      monthlyGmvPaise: 250000000,
+      file,
+    });
+
+    expect(merchant.data_source).toBe("merchant_csv");
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toContain("/api/v1/onboarding/merchants/with-csv");
+    expect(init.method).toBe("POST");
+    expect(init.body).toBeInstanceOf(FormData);
+    const form = init.body as FormData;
+    expect(form.get("name")).toBe("Acme Commerce");
+    expect(form.get("monthly_gmv_paise")).toBe("250000000");
+    expect((form.get("file") as File).name).toBe("payments.csv");
+    const headers = init.headers as Record<string, string> | undefined;
+    expect(headers?.["Content-Type"]).toBeUndefined();
   });
 
   it("parses the deterministic error envelope without dumping objects", async () => {
