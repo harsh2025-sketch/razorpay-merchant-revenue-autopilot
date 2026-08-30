@@ -1,308 +1,253 @@
 # Production Verification Record
 
-This document records hosted release verification for Merchant Revenue Autopilot. It is deliberately separate from the frozen synthetic benchmark.
+This document records hosted verification for Merchant Revenue Autopilot. It is deliberately separate from the frozen synthetic benchmark.
 
-The benchmark evaluates strategy behavior in a controlled causal world. Production verification checks whether the deployed product actually preserves its trust boundaries across Vercel, Render, Supabase, the hosted LLM boundary, the simulated Razorpay execution adapter, experiment runtime, statistics, adaptive memory, champion state, and audit history.
+The benchmark tests strategy behavior inside a controlled causal world. Production verification checks whether the deployed application preserves its trust boundaries across the frontend, backend, persistence, LLM boundary, Razorpay execution boundary, experiment runtime, statistics, adaptive memory, champion state, and audit history.
 
 ## Release surfaces
 
 - Frontend: https://merchant-revenue-autopilot-psi.vercel.app
 - Merchant Intelligence: https://merchant-revenue-autopilot-psi.vercel.app/intelligence
 - Backend health: https://merchant-revenue-autopilot-api.onrender.com/health
-- Merchant: `merchant_techbazaar`
-- Hosted execution mode: simulated
+- Canonical merchant: `merchant_techbazaar`
 
 ---
 
-# Final adaptive verification — Task 20
+# 1. Historical adaptive verification — Task 20
 
-## Trigger
-
-Implementation merge:
-
-`0c25ad618253ca1b2ac397a99b4c2317fb072936`
-
-Production verification trigger:
-
-`30a5f5f0028f802f151bfa72a7629366a7f2effa`
-
-Trigger marker:
-
-`[production-verify-v2]`
+Task 20 verified the third adaptive optimization cycle while the hosted Razorpay boundary was intentionally configured in simulated mode.
 
 Production Journey Verification run:
 
+```text
 https://github.com/harsh2025-sketch/razorpay-merchant-revenue-autopilot/actions/runs/33308795917
+```
 
 Result:
 
-`TASK 20: PASS`
-
-## Preflight state
-
-Before the write-capable Task 20 run:
-
-- terminal experiment memory contained 2 trials
-- both previous statistical outcomes were `INCONCLUSIVE`
-- Champion was v1 / merchant baseline
-- no treatment had earned KEEP promotion
-- audit chain was valid
-- no untouched active opportunity was available for portfolio ranking
-
-Because the portfolio had no eligible untouched candidate, rollover correctly proceeded to fresh deterministic detection instead of pretending to rank nonexistent choices.
-
-## New verified cycle
-
-Opportunity:
-
-`0e500ccd-6c3d-4ade-a06c-afc3d2cd24e6`
-
-Experiment:
-
-`5277a2df-c1a5-4009-9320-c97c3576ff38`
-
-Segment:
-
-`android_budget`
-
-Observed evidence at detection:
-
-| Metric | Value |
-| --- | ---: |
-| Segment attempts | 6,207 |
-| Segment captured | 2,936 |
-| Segment conversion | 47.3% |
-| Comparison attempts | 3,956 |
-| Comparison captured | 2,318 |
-| Comparison conversion | 58.6% |
-| Absolute conversion gap | -11.3 pp |
-
-## Memory-aware diagnosis
-
-The live OpenRouter-backed diagnosis received prior experiment history for the merchant segment.
-
-It explicitly reasoned over earlier `partial_payment` and `payment_method_config` experiments and proposed:
-
-- intervention: `payment_method_config`
-- card: enabled
-- UPI: enabled
-- netbanking: enabled
-- wallet: enabled
-- confidence: high
-
-A payment-method configuration had previously reached an INCONCLUSIVE terminal result. The memory layer did not simply forget that history. Task 20 verified that reconsideration passed the deterministic material-evidence-change rule before hypothesis persistence.
-
-Verifier assertion:
-
-`memory_aware_hypothesis_verified: true`
-
-## Champion–challenger verification
-
-The merchant entered Task 20 at Champion v1 because no prior treatment had earned KEEP.
-
-The deterministic planner therefore used the merchant baseline as control and the new proposal as challenger.
-
-Control:
-
-```json
-{"payment_methods":"merchant_default"}
+```text
+TASK 20: PASS
 ```
 
-Treatment:
-
-```json
-{"payment_methods":{"card":true,"upi":true,"netbanking":true,"wallet":true}}
-```
-
-Verifier assertion:
-
-`champion_control_verified: true`
-
-## Deterministic plan and authorization
-
-The planner created:
-
-- treatment exposure: 10%
-- primary metric: conversion rate
-- minimum sample: 200 per variant
-- maximum duration: 72 hours
-- guardrails: captured GMV, failure rate, abandonment rate
-
-Merchant policy returned:
-
-`APPROVE`
-
-## Hosted execution
-
-The explicitly simulated execution boundary created:
-
-`demo_plink_0a6348797891d7c8`
-
-The UI labels it **Simulated Payment Link** and states that no Razorpay API request was made and that the resource does not exist in the Razorpay dashboard.
-
-Task 20 also attempted cycle rollover while the experiment was active/deployed. The request was rejected with:
-
-`HTTP 409 INVALID_TRANSITION`
-
-Verifier assertion:
-
-`skip_guard_verified: true`
-
-## Verified lifecycle
-
-The public one-step orchestrator advanced exactly one legal transition per request:
+## Task 20 cycle
 
 ```text
-HYPOTHESIS_PROPOSED
-  -> EXPERIMENT_PLANNED
-  -> POLICY_APPROVED
-  -> RESOURCE_DEPLOYED
-  -> EXPERIMENT_BATCH_RUN
-  -> EXPERIMENT_BATCH_RUN
-  -> EXPERIMENT_BATCH_RUN
-  -> EXPERIMENT_BATCH_RUN
-  -> EXPERIMENT_BATCH_RUN
-  -> EXPERIMENT_EVALUATED
+opportunity: 0e500ccd-6c3d-4ade-a06c-afc3d2cd24e6
+experiment:  5277a2df-c1a5-4009-9320-c97c3576ff38
+segment:     android_budget
+resource:    demo_plink_0a6348797891d7c8
 ```
 
-## Fixed-horizon result
+At that time the simulated adapter was explicit. The UI correctly described `demo_plink_0a6348797891d7c8` as a simulated Payment Link that did not exist in the Razorpay dashboard.
+
+Task 20 verified:
+
+- memory-aware diagnosis;
+- material-evidence-change handling for prior inconclusive ideas;
+- Champion v1 as the control because no prior treatment had earned KEEP;
+- deterministic plan and merchant-policy APPROVE;
+- active-cycle skip protection;
+- fixed-horizon statistics;
+- terminal memory persistence;
+- audit-chain validity.
+
+Task 20 fixed-horizon result:
 
 | Metric | Result |
 | --- | ---: |
 | Control samples | 1,895 |
 | Treatment samples | 200 |
-| Control conversions | 895 |
-| Treatment conversions | 91 |
 | Control conversion | 47.2% |
 | Treatment conversion | 45.5% |
 | Absolute lift | -1.7 pp |
-| Relative lift | -3.7% |
 | p-value | 0.6412 |
-| 95% CI | -9.0 pp to +5.5 pp |
-| Significant | No |
 | Decision | `INCONCLUSIVE` |
 
-The LLM did not participate in this decision.
+Because the result was INCONCLUSIVE, Champion correctly remained v1. No promotion was fabricated.
 
-## Learning and champion assertions
-
-Task 20 verified after the terminal result:
-
-```json
-{
-  "previous_trial_count": 2,
-  "new_trial_count": 3,
-  "previous_champion_version": 1,
-  "new_champion_version": 1,
-  "memory_aware_hypothesis_verified": true,
-  "champion_control_verified": true,
-  "skip_guard_verified": true,
-  "terminal_outcome": "INCONCLUSIVE",
-  "audit_chain_valid": true,
-  "learning_persisted": true
-}
-```
-
-The terminal trial was added to merchant memory exactly once.
-
-Because the result was INCONCLUSIVE rather than KEEP, Champion correctly remained v1. No promotion event was fabricated.
-
-## Final Intelligence state
-
-After Task 20 the live `/intelligence` page independently returned HTTP 200 and showed:
-
-- Current Champion: v1
-- Promoted treatments: 0
-- Terminal trials: 3
-- Statistical results: 3
-- KEEP: 0
-- ROLLBACK: 0
-- INCONCLUSIVE: 3
-- Policy rejections: 0 in hosted history
-
-Learned history:
-
-- `android_budget / partial_payment`: 1 trial, latest lift about -0.9 pp, INCONCLUSIVE
-- `android_budget / payment_method_config`: 2 trials, latest lift about -1.7 pp, both INCONCLUSIVE
-
-No untouched active opportunity remained after the completed cycle.
-
-## Final Overview state
-
-The live `/overview` page independently returned HTTP 200 and showed:
-
-- 12,258 accumulated payment attempts
-- completed cycle state
-- latest decision INCONCLUSIVE
-- audit integrity Verified
-- active experiments: 0
-
-The 12,258 live attempts include preserved experimental traffic. The canonical frozen baseline remains 6,112 attempts.
+The Task 20 snapshot ended with three terminal INCONCLUSIVE trials and zero promoted treatments.
 
 ---
 
-# Earlier release verification and recovery evidence
+# 2. Later hosted real-path Razorpay evidence — 30 Aug 2026
 
-Before the adaptive Task 20 layer, the first guarded hosted verification successfully preserved the original cycle and created a second opportunity:
+After Task 20, additional history-preserving cycles were run. The latest observed cycle is materially different from the older simulated-resource cycles.
 
-`a1761032-0637-40f3-8a44-38e02242683f`
+## Latest cycle
 
-Its first Autopilot step exposed a production-only structured-output parsing issue at the OpenAI-compatible boundary. Provider output parsing could raise a local Pydantic validation exception that was not yet mapped into the diagnosis error model, producing a sanitized HTTP 500.
+```text
+opportunity: 2956c570-9504-40b6-9557-372fe7455ccc
+experiment:  83b571f0-3520-4435-b279-7fad1f4e0efb
+segment:     android_budget
+intervention: expiry_config
+policy:      APPROVE
+resource:    plink_TW3blQWQpXXHRL
+resource status: active
+```
 
-The failure occurred before a hypothesis, experiment, policy decision, or payment resource for the new cycle was persisted. The live state remained safely at `HYPOTHESIS_PENDING`; the prior cycle and audit chain remained intact.
+The live cycle detail renders this resource as:
 
-The diagnosis boundary was repaired and regression-tested so provider-side structured parse failures fail closed as AI-output errors. One bounded retry is allowed only at this pre-persistence diagnosis boundary.
+```text
+Razorpay Test Resource
+Razorpay Test Mode
+Payment Link
+plink_TW3blQWQpXXHRL
+```
 
-The verifier was then made interruption-safe and resumed the exact persisted opportunity rather than creating another cycle.
+and states that one real Razorpay Test Mode treatment resource is deployed while experimental customer traffic is simulated separately.
 
-Successful resume trigger:
+The Audit Log contains a matching `RAZORPAY_RESOURCE_CREATED` event for the same experiment and `plink_TW3blQWQpXXHRL`.
 
-`cd931dab6b811afc7b18e29fc54613d9e2de911b`
+## Why this is stronger than the older simulated evidence
 
-Successful resume run:
+The simulated adapter in this repository produces `demo_plink_*` IDs. Older hosted cycles visibly contain those IDs.
 
-https://github.com/harsh2025-sketch/razorpay-merchant-revenue-autopilot/actions/runs/33303163100
+The later approved cycle persisted a plain `plink_*` instead. This is therefore **application-side evidence that the hosted executor crossed the real Razorpay Test Mode client boundary and received a Razorpay resource response**.
 
-That second cycle completed with:
+This statement is intentionally narrower than independent external verification. Our own application database/UI is not an independent source.
 
-- intervention: partial payment
-- 25% minimum first payment
-- policy: APPROVE
-- simulated resource: `demo_plink_8b6f752dd2126b8a`
-- control conversion: 46.9%
-- treatment conversion: 46.0%
-- absolute lift: -0.9 pp
-- p-value: 0.8071
-- decision: INCONCLUSIVE
-- audit chain: valid
+Until the same `plink_TW3blQWQpXXHRL` is confirmed in the Razorpay Test Mode dashboard/API, the correct claim is:
 
-This failure/recovery history is intentionally retained. The release record is stronger when it shows that a production-only defect was detected before any external action, repaired, regression-tested, and safely resumed.
+> The live application records a real Razorpay Test Mode `plink_*` from an approved executor path; independent external confirmation remains pending.
 
-## What the verification proves
+## Latest statistical result
 
-The hosted system has been exercised beyond unit tests and preview builds. The release evidence confirms:
+The real Test Mode resource deployment and experimental customer outcomes remain separate concerns. Customer outcomes for TechBazaar are still generated by the sealed evaluation runtime.
 
-- repeatable, history-preserving cycles
-- deterministic opportunity/portfolio semantics
-- structured terminal experiment memory
-- memory-aware LLM diagnosis
-- deterministic stale-repeat constraints
-- champion-aware planning
-- merchant-policy authorization
-- simulated execution disclosure
-- active-cycle skip protection
-- fixed-horizon statistical decisions
-- learning persistence after terminal results
-- KEEP-only champion progression semantics
-- hash-chain integrity
-- recoverability after an interrupted pre-persistence AI boundary
+Latest fixed-horizon result:
 
-## What this verification does not claim
+| Metric | Result |
+| --- | ---: |
+| Control samples | 1,657 |
+| Treatment samples | 200 |
+| Control conversions | 803 |
+| Treatment conversions | 97 |
+| Control conversion | 48.46% |
+| Treatment conversion | 48.50% |
+| Absolute lift | about +0.04 pp |
+| p-value | about 0.9917 |
+| Decision | `INCONCLUSIVE` |
 
-- It does not claim a `demo_...` resource is a real Razorpay dashboard object.
+The LLM did not participate in the statistical decision. Champion v1 remained unchanged.
+
+The Test Mode Payment Link remained active in the application record after the INCONCLUSIVE result. This is not treated as a KEEP promotion: experimental customer assignment had already stopped and the resource is a standalone Test Mode object. The current product exposes automatic/explicit cancellation only for a statistical ROLLBACK. No late semantic change was made solely to make the demo state look cleaner.
+
+---
+
+# 3. Controlled external create → verify → cancel harness
+
+The repository contains:
+
+```text
+scripts/verify_razorpay_autopilot.py
+```
+
+This manual credential-gated verifier is designed to close the remaining independent proof gap without mutating the hosted production database.
+
+It exercises:
+
+```text
+persisted verification experiment
+  -> deterministic policy APPROVE
+  -> real Task 13 executor create
+  -> Test Mode plink_...
+  -> persisted resource + operation ledger
+  -> independent Razorpay fetch
+  -> existing fixed-horizon runtime
+  -> existing statistical ROLLBACK on the controlled harmful fixture
+  -> real Task 13 rollback executor
+  -> independent cancellation fetch
+  -> audit-chain verification
+```
+
+Safety properties:
+
+- requires `RAZORPAY_EXECUTION_MODE=real`;
+- accepts only `rzp_test_*` key IDs;
+- refuses live-mode keys;
+- uses a temporary local SQLite database;
+- creates one Test Mode Payment Link;
+- attempts cleanup on failure;
+- does not persist credentials.
+
+An offline CI regression verifies the harness orchestration with a fake Razorpay client while retaining the real planner, policy, executor persistence/idempotency, runtime, statistics, rollback, and audit paths.
+
+Offline CI does **not** count as external network proof. The complete proof is closed only when the manual verifier returns `PASS` against actual Test Mode credentials.
+
+See `docs/RAZORPAY_TEST_MODE_PROOF.md`.
+
+---
+
+# 4. Final read-only production smoke
+
+After final implementation and documentation hardening, the judge-facing routes were checked read-only.
+
+HTTP 200 was observed for:
+
+- `/overview`
+- `/onboarding`
+- `/data`
+- `/intelligence`
+- `/autopilot`
+- `/audit`
+- `/autopilot/2956c570-9504-40b6-9557-372fe7455ccc`
+
+The live state observed during that smoke included:
+
+- 14,115 accumulated payment attempts;
+- Champion v1;
+- 5 terminal trials / 4 statistical results;
+- 0 promoted treatments;
+- 4 INCONCLUSIVE statistical results;
+- audit integrity `Verified`;
+- latest experiment `83b571f0-3520-4435-b279-7fad1f4e0efb`;
+- latest application-recorded Test Mode resource `plink_TW3blQWQpXXHRL`;
+- latest statistical decision `INCONCLUSIVE`, p ≈ 0.9917.
+
+These are point-in-time production observations, not frozen benchmark values.
+
+---
+
+# 5. Earlier failure and safe recovery evidence
+
+Before the final adaptive layer, a hosted OpenAI-compatible structured-output response triggered a local Pydantic parsing failure that was not yet mapped into the diagnosis error model.
+
+The failure happened before hypothesis persistence, experiment planning, policy authorization, or payment-resource creation for that cycle. The product stayed at the safe pre-persistence boundary.
+
+The diagnosis adapter was repaired so provider-side structured parsing failures fail closed as AI-output errors. A bounded retry is permitted only at that diagnosis boundary. Production verification then resumed the same persisted opportunity rather than creating fake replacement history.
+
+This failure/recovery evidence is retained because it demonstrates that provider failure did not silently bypass policy or execution safety.
+
+---
+
+# 6. What production verification supports
+
+The deployed system has now been exercised beyond unit tests and preview builds. The evidence supports:
+
+- repeatable, history-preserving optimization cycles;
+- deterministic opportunity prioritization;
+- structured terminal experiment memory;
+- memory-aware LLM diagnosis;
+- deterministic stale-repeat constraints;
+- champion-aware planning;
+- deterministic merchant-policy authorization;
+- both explicit simulated-resource history and a later application-recorded real Test Mode `plink_*`;
+- application-level idempotent execution boundaries;
+- active-cycle skip protection;
+- fixed-horizon statistical decisions;
+- learning persistence;
+- KEEP-only champion progression;
+- hash-chain integrity;
+- safe recovery from a provider-side pre-persistence diagnosis failure;
+- read-only health of all judge-facing frontend routes.
+
+# 7. What production verification does not claim
+
+- It does not call an older `demo_plink_*` a real Razorpay object.
+- It does not treat our own `plink_*` application record as independent external confirmation.
+- It does not claim the full create→fetch→ROLLBACK→cancel Test Mode proof has passed until the credential-gated verifier actually returns `PASS`.
 - It does not claim production merchant uplift.
-- It does not convert the synthetic benchmark into a revenue claim.
-- It does not claim the hosted merchant advanced its champion; it correctly remains Champion v1.
-- It does not claim the portfolio selected among multiple candidates in Task 20; none existed before fresh detection.
+- It does not convert synthetic benchmark results into revenue claims.
+- It does not claim Champion advanced; it remains Champion v1.
+- It does not claim uploaded merchants have real checkout-assignment/payment-event experiment ingestion yet.
 - It does not claim the audit chain is a blockchain or external immutable ledger.
-- It does not replace real merchant onboarding or Razorpay Test Mode verification once suitable merchant credentials are available.

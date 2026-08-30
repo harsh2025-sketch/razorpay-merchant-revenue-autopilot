@@ -4,282 +4,237 @@
 
 Revenue Autopilot is a controlled learning system for payment-conversion optimization.
 
-It observes merchant payment evidence, detects conversion leakage, lets an LLM propose a structured causal hypothesis, converts that proposal into a bounded experiment, applies deterministic merchant policy, executes through an explicit Razorpay boundary, evaluates at a fixed statistical horizon, and persists the outcome so later cycles learn from prior trials.
-
-The core rule is:
+It observes merchant payment evidence, detects conversion leakage, lets an LLM propose a structured causal hypothesis, converts the proposal into a bounded experiment, applies deterministic merchant policy, executes through an explicit Razorpay boundary, evaluates at a fixed statistical horizon, and persists the outcome so later cycles learn from prior trials.
 
 > **AI proposes. Deterministic policy authorizes. The execution boundary acts. Statistics decides. Persisted outcomes shape the next cycle.**
 
-## What is the actual AI contribution?
+## What is the AI actually responsible for?
 
-The LLM performs evidence-grounded diagnosis and hypothesis generation. It maps heterogeneous merchant evidence plus compact prior experiment history into a structured candidate intervention.
+The LLM performs evidence-grounded diagnosis and hypothesis generation from merchant evidence plus compact prior experiment history.
 
-The LLM does **not**:
+It does **not**:
 
 - rank opportunities;
-- set experiment traffic allocation;
-- choose the statistical threshold;
 - authorize merchant-impacting changes;
 - call Razorpay directly;
+- set statistical significance rules;
 - decide whether its treatment won;
 - promote itself to champion.
 
-If the hypothesis space eventually becomes completely enumerable, some diagnosis work could become deterministic. The architecture does not pretend an LLM is necessary for tasks deterministic code can do better.
+If a future hypothesis space becomes completely enumerable, some diagnosis could be made deterministic. The architecture does not force an LLM into tasks deterministic code can do better.
 
-## Is this just an A/B testing dashboard?
+## Is this just an analytics dashboard with an OpenAI call?
 
-No. The dashboard is only a read/control surface over a backend lifecycle:
+No. The UI is a read/control surface over a backend lifecycle:
 
 ```text
 payment evidence
-  -> deterministic metrics + detection
+  -> metrics + detection
   -> deterministic opportunity portfolio
   -> structured experiment memory
-  -> LLM diagnosis
+  -> LLM hypothesis
   -> deterministic stale-repeat validation
-  -> champion-aware experiment planner
+  -> champion-aware planner
   -> deterministic merchant policy
-  -> duplicate-safe execution boundary
+  -> idempotent execution boundary
   -> fixed-horizon measurement
   -> KEEP / ROLLBACK / INCONCLUSIVE
   -> champion + learned memory + audit
 ```
 
+The interesting engineering is the separation of authority around the probabilistic component.
+
 ## How does the system learn?
 
-Learning is reconstructed from persisted structured records rather than free-form chat history.
+Learning is reconstructed from persisted domain records rather than free-form chat memory.
 
-Per terminal experiment the system can recover:
+Per terminal experiment the system can recover treatment configuration, merchant-policy outcome, statistical decision, lift, p-value, resource state, and prior-trial count. Active work is excluded until it reaches a safe terminal boundary.
 
-- segment and intervention;
-- treatment configuration;
-- policy outcome;
-- statistical decision;
-- lift and p-value;
-- resource state;
-- prior trial count.
-
-Active experiments are excluded until they reach a safe terminal boundary.
-
-## How do you stop the model from repeating failed ideas forever?
+## How do you stop repeated failed ideas?
 
 After the LLM responds, deterministic memory validation compares the semantic proposal with prior merchant trials.
 
 - exact policy-rejected configurations remain blocked;
-- exact prior ROLLBACK/INCONCLUSIVE proposals are blocked when observable evidence is materially unchanged;
-- reconsideration is allowed only after explicit material evidence change;
+- exact prior ROLLBACK/INCONCLUSIVE proposals are blocked when evidence is materially unchanged;
+- reconsideration requires explicit material evidence change;
 - one bounded corrective diagnosis attempt is allowed before failing closed.
 
-Nothing is persisted until the proposal passes schema, evidence, semantic, and memory checks.
+Nothing is persisted until schema, evidence, semantics, and memory checks pass.
 
 ## How are opportunities prioritized?
 
-Only eligible untouched opportunities are ranked. The deterministic portfolio uses observable conversion gap, affected volume, captured average order value, merchant-policy feasibility, and prior terminal-trial history.
+Untouched opportunities are ranked deterministically using observable conversion gap, affected volume, captured average order value, policy feasibility, and prior terminal trials.
 
-The history adjustment is explicit:
-
-```text
-history_factor = 1 / (1 + prior_terminal_trials)
-```
-
-Any displayed GMV figure is an **opportunity-sizing proxy**. It is not realized revenue, forecast revenue, or a causal uplift claim.
+The displayed GMV number is an **opportunity-sizing proxy**. It is not realized revenue, profit, or a causal uplift forecast.
 
 ## What is Champion v1?
 
-Champion v1 is the merchant baseline configuration.
+Champion v1 is the merchant baseline configuration. Only a fixed-horizon statistical `KEEP` can promote a treatment. `ROLLBACK` and `INCONCLUSIVE` leave the champion unchanged.
 
-Only a fixed-horizon statistical `KEEP` can promote a treatment. Future experiments of the same intervention type inherit the promoted configuration as control. `ROLLBACK` and `INCONCLUSIVE` leave the champion unchanged.
+The hosted history currently has no KEEP promotion, so Champion v1 correctly remains the merchant baseline.
 
-The preserved Task 20 hosted snapshot has three terminal INCONCLUSIVE trials, so Champion v1 correctly remains the merchant baseline.
+## Why is INCONCLUSIVE acceptable?
 
-## Why is an INCONCLUSIVE result useful in a demo?
+Because the system should refuse to promote its own idea without sufficient evidence.
 
-Because the architecture is supposed to prevent the agent from declaring success without sufficient evidence.
+The latest observed hosted cycle had approximately:
 
-The preserved hosted result was approximately:
-
-- control conversion: 47.2%
-- treatment conversion: 45.5%
-- absolute lift: -1.7 percentage points
-- p-value: 0.6412
+- control conversion: 48.46%
+- treatment conversion: 48.5%
+- absolute lift: approximately 0.04 percentage points
+- p-value: approximately 0.9917
 - decision: `INCONCLUSIVE`
 
-The system did not promote the treatment simply because the AI proposed it.
+The LLM did not participate in that decision, and Champion v1 remained unchanged.
 
 ## Why fixed-horizon statistics?
 
-Repeatedly peeking at interim p-values and stopping whenever results look favorable inflates false-positive risk.
-
-Revenue Autopilot evaluates only after both variants reach the predefined horizon. A deterministic two-proportion test plus practical-lift threshold returns `KEEP`, `ROLLBACK`, or `INCONCLUSIVE`. The LLM does not participate.
+Repeatedly peeking and stopping when a p-value looks favorable inflates false-positive risk. Revenue Autopilot evaluates only after both variants reach the predefined horizon. A deterministic two-proportion test plus practical-lift threshold returns `KEEP`, `ROLLBACK`, or `INCONCLUSIVE`.
 
 ## What prevents unsafe financial changes?
 
-A deterministic merchant policy checks the complete planned experiment, including intervention allow-list, treatment exposure, minimum sample size, duration, discount limits, financial exposure, and concurrent-experiment constraints.
+Deterministic merchant policy checks intervention allow-lists, treatment exposure, minimum sample size, duration, discounts, financial exposure, and concurrent-experiment constraints.
 
-Unsafe proposals are rejected. The system does not silently clamp an unsafe AI proposal into a different approved proposal.
-
-## Why not let the LLM call Razorpay directly?
-
-The component that generates a hypothesis should not also authorize and execute it.
-
-The LLM proposes a semantic intervention. Deterministic policy authorizes or rejects it. The executor converts only an already-approved treatment into a supported Razorpay operation.
+Unsafe proposals are rejected rather than silently clamped into a different approved experiment.
 
 ## Is Razorpay actually integrated?
 
-The repository contains a real Razorpay Test Mode HTTP client and a deterministic executor for Payment Links and Orders, including:
+Yes, at the code and application-execution boundary.
 
-- payment-method configuration;
-- partial payments;
-- expiry configuration;
-- verified existing Offer association where supported;
-- resource fetch;
-- cancellation/rollback;
-- application-level idempotency;
-- ambiguous-write fail-closed behavior.
+The repository contains a real Razorpay Test Mode HTTP client and deterministic executor for Payment Links and Orders, including supported checkout configuration, partial payment, expiry configuration, resource fetch, cancellation, application-level idempotency, and ambiguous-write protection.
 
-The **public hosted demo remains explicitly simulated** and uses `demo_...` resource IDs. Those are not represented as real Razorpay dashboard objects.
+The hosted history contains two classes of execution evidence:
 
-A separate credential-gated verifier, `scripts/verify_razorpay_autopilot.py`, exercises the exact executor chain against Razorpay Test Mode. It refuses live-mode keys and cleans up its Test Mode Payment Link.
+1. **Older explicitly simulated cycles**, which created IDs such as `demo_plink_0a6348797891d7c8`.
+2. **A later hosted cycle** whose approved executor path persisted and renders `plink_TW3blQWQpXXHRL` as a Razorpay Test Mode Payment Link.
 
-Do not call the Test Mode path externally verified until that script has actually completed with `PASS` using real `rzp_test_...` credentials and the matching resource has been independently observed. See `docs/RAZORPAY_TEST_MODE_PROOF.md`.
+In this codebase simulated execution generates `demo_plink_*`. A plain `plink_*` therefore provides **application-side evidence that the real Test Mode client path returned a Razorpay resource** for that cycle.
+
+That still does not equal independent external verification. The matching `plink_*` should be confirmed in the Razorpay Test Mode dashboard/API before saying the external proof is fully closed.
+
+## What exactly remains to prove about Razorpay?
+
+Two levels should be kept separate:
+
+- **Application-side execution evidence:** already present for `plink_TW3blQWQpXXHRL`.
+- **Independent external confirmation:** confirm the same resource in Razorpay Test Mode outside our own database/UI.
+
+For the strongest proof, the repo includes `scripts/verify_razorpay_autopilot.py`, which performs:
+
+```text
+policy APPROVE
+  -> executor create
+  -> independent Razorpay fetch
+  -> fixed-horizon harmful fixture
+  -> genuine ROLLBACK
+  -> executor cancellation
+  -> independent cancellation fetch
+  -> audit verification
+```
+
+It refuses live-mode keys and uses a temporary local database. Its domain chain passes offline CI, but that offline test is not a substitute for a real credential-gated run.
+
+## Why not let the LLM call Razorpay directly?
+
+The component that invents a hypothesis should not also authorize and execute it. The LLM proposes semantic intent; deterministic policy authorizes; the executor translates only an approved treatment into supported Razorpay operations.
 
 ## Why is application-level idempotency important?
 
-The executor records a unique operation key and canonical request hash before an external write.
+A network timeout does not tell you whether an external write happened. The executor records a unique operation key and canonical request hash before the write.
 
-- a confirmed repeated deployment returns the existing resource;
-- a conflicting request is rejected;
-- an ambiguous timeout/network/5xx outcome is not blindly retried;
-- rollback uses the same explicit operation-ledger boundary.
+- confirmed repeats return the existing resource;
+- conflicting requests fail;
+- ambiguous timeout/network/5xx states are not blindly retried;
+- rollback uses the same explicit operation ledger.
 
-This prevents a transient HTTP failure from silently creating duplicate merchant resources.
+This protects against duplicate payment resources after transient failures.
 
-## Why is Offer creation not automated?
+## Why not auto-create every Offer?
 
-The executor does not invent a nonexistent or unverified Offer creation path. Offer-based deployment requires a verified pre-created Offer mapping. Without it, the system fails closed.
+The executor does not invent an unsupported or unverified API path. Offer-based deployment requires a verified pre-created Offer mapping; otherwise it fails closed.
 
-## Can real merchants onboard data now?
+## Can a real merchant upload data?
 
-Yes. The production-facing path supports creating a merchant from canonical CSV payment history and later appending additional transaction revisions with deterministic deduplication.
+Yes. A merchant can be created from canonical CSV payment history and append later transaction revisions with deterministic deduplication.
 
-Historical observations are preserved rather than replayed as new evidence.
-
-This is separate from authentication and full multi-tenant account isolation, which remain production-hardening work.
+Historical observations feed metrics, detection, ranking, diagnosis, planning, and policy.
 
 ## Do uploaded merchants use the TechBazaar simulator?
 
-No. This is an explicit Task 22 boundary.
+No. This is an explicit Task 22 safety boundary.
 
-Uploaded merchant history can feed metrics, detection, ranking, diagnosis, planning, and policy. But once a treatment reaches measurement, the system **refuses** to generate experimental outcomes from TechBazaar's hidden causal simulator.
+When an uploaded merchant reaches experiment measurement, Revenue Autopilot refuses to manufacture treatment outcomes from TechBazaar's hidden causal world. The product enters **Awaiting live outcomes** and returns `LIVE_EXPERIMENT_TRAFFIC_REQUIRED`.
 
-The product enters an **Awaiting live outcomes** state and returns `LIVE_EXPERIMENT_TRAFFIC_REQUIRED` rather than manufacturing lift or a p-value.
+A production checkout/payment-event integration must provide authoritative assigned control/treatment outcomes before statistics can run.
 
-A production integration must provide authoritative assigned control/treatment payment outcomes before the existing statistics engine can evaluate that merchant's experiment.
+## Why not generalize the simulator to uploaded merchants?
 
-## Why not generalize the simulator to every uploaded merchant?
-
-Because that would turn an evaluation model into fabricated production evidence.
-
-The sealed TechBazaar causal model exists only to evaluate the system under known hidden truth. It is not evidence about an arbitrary merchant.
+Because that would turn an evaluation model into fabricated production evidence. TechBazaar's hidden causal model exists to test the system under known concealed truth; it is not evidence about an arbitrary merchant.
 
 ## What does one-click experiment execution mean?
 
-For the canonical TechBazaar evaluation merchant, Task 21C combines repeated runtime-batch clicks into one bounded `Run Experiment` operation.
+For TechBazaar, the UI can drive the authorized runtime to its fixed horizon with one bounded `Run Experiment` action rather than repeated batch clicks.
 
-It does **not** weaken the boundaries:
+It still requires persisted policy APPROVE and an active treatment resource. Task 11 remains the synthetic runtime, Task 12 remains the statistical authority, and explicit external rollback remains separate.
 
-- persisted policy APPROVE is still required;
-- an active deployed treatment resource is still required;
-- Task 11 remains the only synthetic runtime;
-- Task 12 remains the only statistical authority;
-- explicit Razorpay rollback remains separate;
-- repeated calls after a result are idempotent.
+Uploaded merchants do not get the synthetic one-click outcome path.
 
-Uploaded merchants do not receive that synthetic one-click runtime; they wait for real outcomes.
+## What does the benchmark prove?
 
-## What is the benchmark and what does it prove?
+A frozen deterministic benchmark compares no optimization, random intervention, a rule baseline, and Autopilot over identical paired synthetic contexts.
 
-A separate frozen deterministic benchmark compares:
+Autopilot averages approximately 59.39% conversion versus 58.18% for no optimization in that frozen world.
 
-- no optimization;
-- random intervention;
-- rule-based intervention;
-- Autopilot.
-
-The canonical evaluation averages approximately 59.39% conversion for Autopilot versus 58.18% for no optimization across the frozen paired world.
-
-That demonstrates reproducible behavior inside the synthetic evaluation environment. It does **not** prove production revenue lift across Razorpay's merchant population.
-
-## Why can random intervention perform reasonably well?
-
-Because the hidden benchmark world contains genuinely positive interventions. Random selection can hit one by chance. A useful baseline should not be engineered to always lose.
+That demonstrates reproducible behavior in the synthetic evaluation environment. It does **not** prove production revenue uplift across Razorpay's merchant population.
 
 ## What does the audit trail guarantee?
 
-Major lifecycle events are appended to a per-merchant SHA-256 hash chain.
+Major lifecycle events are appended to a per-merchant SHA-256 hash chain. It provides application-level tamper evidence and provenance.
 
-It provides application-level tamper evidence and provenance for evidence, diagnosis, planning, policy, execution, statistics, promotion, and rollback.
-
-It is not a blockchain and does not claim protection against an administrator capable of rewriting the entire database and recomputing every hash.
+It is not a blockchain and does not protect against an administrator capable of rewriting the entire database and recomputing every hash.
 
 ## What happens when the LLM or an external provider fails?
 
-The system fails closed.
+The system fails closed. Examples include malformed structured diagnosis, invalid evidence references, unsupported interventions, unavailable AI configuration, missing Razorpay configuration, ambiguous external writes, insufficient samples, and unsafe lifecycle rollover.
 
-Examples include:
-
-- malformed structured diagnosis;
-- unknown evidence references;
-- unsupported intervention parameters;
-- unavailable AI configuration;
-- missing Razorpay configuration;
-- ambiguous external writes;
-- insufficient experiment samples;
-- unsafe rollover of an active cycle.
-
-The project preserves failure history instead of hiding it. Earlier production verification exposed a provider-side structured-output issue, which was fixed and regression-tested without inventing a successful experiment.
+A production-only provider parsing failure was previously detected before any experiment/payment mutation, repaired, regression-tested, and safely resumed. That failure history is intentionally preserved.
 
 ## Why OpenRouter in the hosted demo?
 
-The diagnosis layer uses an OpenAI-compatible SDK boundary. The hosted deployment points that boundary at OpenRouter. Provider choice does not alter downstream evidence validation, memory rules, policy, execution, or statistics.
+The diagnosis boundary uses an OpenAI-compatible SDK and the hosted deployment routes it through OpenRouter. Provider choice does not alter evidence validation, merchant memory, policy, execution, or statistics.
 
-The frozen benchmark uses a deterministic diagnosis adapter so repeated evaluation runs do not depend on a changing hosted model.
+## What is the strongest architecture decision?
 
-## What is the strongest production boundary in the architecture?
-
-No single probabilistic component owns the whole commercial decision.
+No single probabilistic component owns the commercial decision.
 
 - AI proposes.
-- Deterministic code ranks and validates.
+- Deterministic code validates and ranks.
 - Merchant policy authorizes.
 - The executor controls external mutation.
 - Statistics determines success.
 - Persisted memory controls what happens next.
 
-That separation is the main engineering contribution.
+## What would you build next for production?
 
-## What would you build next for a production rollout?
+1. Independently confirm the hosted Test Mode `plink_*` and complete the credential-gated create→verify→cancel proof.
+2. Authoritative checkout assignment and Razorpay payment-event/webhook ingestion for real control/treatment outcomes.
+3. Authentication, tenant authorization, and merchant credential isolation.
+4. Scheduled/background experiment progression.
+5. External-write reconciliation and stronger concurrent transaction controls.
+6. Consented real-merchant evaluation before production uplift claims.
 
-The highest-value next steps are:
-
-1. authoritative checkout assignment and Razorpay payment-event/webhook ingestion for real control/treatment outcomes;
-2. authentication, tenant authorization, and merchant credential management;
-3. scheduled/background experiment progression;
-4. external-write reconciliation for ambiguous states;
-5. stronger concurrent database transaction controls;
-6. consented real-merchant evaluation before making production uplift claims.
-
-Merchant CSV onboarding, incremental append/dedup, and real-vs-synthetic measurement separation are already implemented and should not be listed as future features.
+Merchant CSV onboarding, incremental append/dedup, one-click canonical interaction, and real-vs-synthetic measurement separation are already implemented.
 
 ## What should I never claim to a judge?
 
 Do not claim:
 
-- a `demo_...` resource exists in Razorpay;
-- Test Mode proof has passed before the credential-gated verifier actually passes;
-- opportunity-sized GMV is realized revenue;
+- a `demo_plink_*` is real;
+- application-side `plink_*` evidence is already independent dashboard/API confirmation unless you actually show that confirmation;
+- the full create→verify→cancel proof passed before it does;
+- opportunity-sizing GMV is realized revenue;
 - synthetic benchmark lift is production lift;
 - the LLM authorizes or statistically judges its own ideas;
-- uploaded merchants use the TechBazaar causal model;
-- the audit chain is a blockchain;
-- a hosted INCONCLUSIVE trial was a successful revenue increase.
+- uploaded merchants use TechBazaar's causal model;
+- Champion advanced when it remains v1;
+- the audit chain is a blockchain.
