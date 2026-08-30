@@ -5,6 +5,7 @@ import type {
   AutopilotCycle,
   ExperimentRollback,
   MerchantOverview,
+  MerchantIntelligence,
   Opportunity,
 } from "./types";
 
@@ -79,6 +80,12 @@ async function toApiError(response: Response): Promise<ApiError> {
 
 export function getOverview(merchantId: string): Promise<MerchantOverview> {
   return request<MerchantOverview>(API_PATHS.overview(merchantId));
+}
+
+export function getMerchantIntelligence(
+  merchantId: string,
+): Promise<MerchantIntelligence> {
+  return request<MerchantIntelligence>(API_PATHS.intelligence(merchantId));
 }
 
 export function getOpportunities(merchantId: string): Promise<Opportunity[]> {

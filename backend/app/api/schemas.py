@@ -451,6 +451,118 @@ class MerchantOverviewResponse(ApiModel):
     autopilot_status: AutopilotStatusResponse
 
 
+class RankedOpportunityIntelligenceResponse(ApiModel):
+    rank: int
+    opportunity_id: str
+    segment: str
+    status: str
+    detector_severity: float
+    detected_conversion_rate: float | None = None
+    comparison_conversion_rate: float | None = None
+    conversion_gap: float
+    segment_attempts: int
+    average_captured_order_value_paise: float | None = None
+    estimated_incremental_captures: float
+    #: Existing Task 19B sizing proxy. It is not a forecast or booked revenue.
+    estimated_recoverable_gmv_paise: int | None = None
+    prior_terminal_trials: int
+    history_factor: float
+    allowed_intervention_count: int
+    previously_tried_interventions: list[str] = Field(default_factory=list)
+    untried_allowed_interventions: list[str] = Field(default_factory=list)
+    policy_feasible: bool
+    history_adjusted_gmv_proxy_paise: int | None = None
+    priority_index: float
+
+
+class OpportunityPortfolioIntelligenceResponse(ApiModel):
+    merchant_id: str
+    next_best_opportunity_id: str | None = None
+    opportunities: list[RankedOpportunityIntelligenceResponse] = Field(default_factory=list)
+
+
+class ChampionConfigIntelligenceResponse(ApiModel):
+    intervention_type: str
+    config: dict[str, Any] = Field(default_factory=dict)
+    source_experiment_id: str
+    promoted_at: datetime
+    absolute_lift: float
+    p_value: float
+
+
+class MerchantChampionIntelligenceResponse(ApiModel):
+    merchant_id: str
+    version: int
+    promotion_count: int
+    configs: list[ChampionConfigIntelligenceResponse] = Field(default_factory=list)
+    latest_promotion_experiment_id: str | None = None
+
+
+class InterventionKnowledgeResponse(ApiModel):
+    segment: str
+    intervention_type: str
+    trial_count: int
+    approved_count: int
+    rejected_count: int
+    completed_result_count: int
+    keep_count: int
+    rollback_count: int
+    inconclusive_count: int
+    latest_outcome: str
+    latest_experiment_id: str
+    latest_treatment_config: dict[str, Any] = Field(default_factory=dict)
+    latest_treatment_config_fingerprint: str
+    latest_absolute_lift: float | None = None
+    latest_p_value: float | None = None
+
+
+class ExperimentMemoryRecordResponse(ApiModel):
+    experiment_id: str
+    opportunity_id: str
+    segment: str
+    intervention_type: str
+    treatment_config: dict[str, Any] = Field(default_factory=dict)
+    treatment_config_fingerprint: str
+    experiment_status: str
+    policy_decision: Literal["APPROVE", "REJECT"] | None = None
+    policy_violations: list[str] = Field(default_factory=list)
+    statistical_decision: Literal["KEEP", "ROLLBACK", "INCONCLUSIVE"] | None = None
+    control_rate: float | None = None
+    treatment_rate: float | None = None
+    absolute_lift: float | None = None
+    relative_lift: float | None = None
+    p_value: float | None = None
+    confidence_interval_lower: float | None = None
+    confidence_interval_upper: float | None = None
+    is_significant: bool | None = None
+    treatment_resource_status: str | None = None
+    terminal_reason: str
+    created_at: datetime
+    started_at: datetime | None = None
+    ended_at: datetime | None = None
+
+
+class MerchantExperimentMemoryResponse(ApiModel):
+    merchant_id: str
+    trial_count: int
+    completed_result_count: int
+    policy_rejection_count: int
+    keep_count: int
+    rollback_count: int
+    inconclusive_count: int
+    knowledge: list[InterventionKnowledgeResponse] = Field(default_factory=list)
+    records: list[ExperimentMemoryRecordResponse] = Field(default_factory=list)
+
+
+class MerchantIntelligenceResponse(ApiModel):
+    """Read-only merchant intelligence assembled from persisted deterministic truth."""
+
+    merchant: MerchantSummary
+    portfolio: OpportunityPortfolioIntelligenceResponse
+    champion: MerchantChampionIntelligenceResponse
+    memory: MerchantExperimentMemoryResponse
+
+
 class AutopilotStepResponse(ApiModel):
     """Outcome of exactly one Autopilot transition."""
 
@@ -497,6 +609,7 @@ __all__ = [
     "ExperimentStatus",
     "HypothesisResponse",
     "MerchantOverviewResponse",
+    "MerchantIntelligenceResponse",
     "MerchantPolicyPublicResponse",
     "MerchantSummary",
     "OpportunityResponse",

@@ -1594,6 +1594,7 @@ def test_documented_route_surface_is_exactly_the_planned_one(client):
     assert paths == {
         f"{API}/merchants/{{merchant_id}}",
         f"{API}/merchants/{{merchant_id}}/overview",
+        f"{API}/merchants/{{merchant_id}}/intelligence",
         f"{API}/merchants/{{merchant_id}}/opportunities",
         f"{API}/merchants/{{merchant_id}}/audit",
         f"{API}/merchants/{{merchant_id}}/detect",

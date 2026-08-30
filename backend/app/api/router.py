@@ -386,6 +386,24 @@ def read_overview(
 
 
 @router.get(
+    "/merchants/{merchant_id}/intelligence",
+    response_model=schemas.MerchantIntelligenceResponse,
+    responses=ERROR_RESPONSES,
+    tags=["merchant"],
+    summary="Portfolio, champion and learned experiment intelligence",
+)
+def read_merchant_intelligence(
+    merchant_id: str, db: Session = Depends(get_db)
+) -> schemas.MerchantIntelligenceResponse:
+    return read_view(
+        db,
+        lambda: schemas.MerchantIntelligenceResponse.model_validate(
+            autopilot.merchant_intelligence(db, merchant_id)
+        ),
+    )
+
+
+@router.get(
     "/merchants/{merchant_id}/opportunities",
     response_model=list[schemas.OpportunityResponse],
     responses=ERROR_RESPONSES,
