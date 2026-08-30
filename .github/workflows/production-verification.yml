@@ -1,0 +1,30 @@
+name: Production Journey Verification
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  verify-production-journey:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      contains(github.event.head_commit.message, '[production-verify]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Verify deployed demo lifecycle
+        env:
+          BASE_URL: https://merchant-revenue-autopilot-api.onrender.com
+        run: python scripts/verify_production_journey.py --confirm-writes
