@@ -52,7 +52,7 @@ export function ExperimentProgress({ progress }: { progress: ProgressModel }) {
           </h2>
         </div>
         <StatusBadge tone={reached ? "indigo" : "blue"}>
-          {reached ? "Sample target reached" : "Collecting samples"}
+          {reached ? "Sample target reached" : "Ready to run"}
         </StatusBadge>
       </div>
 
@@ -72,8 +72,9 @@ export function ExperimentProgress({ progress }: { progress: ProgressModel }) {
       </div>
 
       <p className="mt-4 text-[12.5px] leading-relaxed text-gray-500">
-        Fixed-horizon evaluation. Statistical results become available only
-        after both cohorts reach the minimum sample target.
+        Run Experiment once. The backend advances deterministic simulated traffic
+        until both cohorts reach the fixed horizon, then the statistical engine
+        records KEEP, ROLLBACK, or INCONCLUSIVE. No interim result is exposed.
       </p>
     </section>
   );
