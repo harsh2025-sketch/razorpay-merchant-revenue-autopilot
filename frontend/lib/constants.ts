@@ -61,4 +61,6 @@ export const API_PATHS = {
   appendMerchantCsv: (merchantId: string) =>
     `/api/v1/data/merchants/${merchantId}/append-csv`,
   appendDemoPeriod: "/api/v1/data/demo/next-period",
+  detectionReadiness: (merchantId: string) =>
+    `/api/v1/data/merchants/${merchantId}/detection-readiness`,
 } as const;
