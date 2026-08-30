@@ -1,187 +1,311 @@
 # Razorpay Merchant Revenue Autopilot
 
-**A learning revenue-optimization agent for Razorpay merchants where AI may propose an experiment, but deterministic policy controls authorization and fixed-horizon statistics controls promotion.**
-
-Merchant Revenue Autopilot turns payment-conversion evidence into bounded optimization cycles. It detects conversion leakage, ranks eligible opportunities, gives an evidence-grounded LLM structured merchant history, plans a controlled experiment, gates it through deterministic merchant policy, executes through an explicit Razorpay boundary, measures the treatment at a fixed sample horizon, and learns from the terminal result without deleting prior history.
+**A controlled AI revenue-optimization system where AI proposes experiments from payment evidence, deterministic policy authorizes them, the execution boundary acts, fixed-horizon statistics decides the outcome, and persisted memory shapes the next cycle.**
 
 **Live demo:** https://merchant-revenue-autopilot-psi.vercel.app  
 **Merchant Intelligence:** https://merchant-revenue-autopilot-psi.vercel.app/intelligence  
 **Backend health:** https://merchant-revenue-autopilot-api.onrender.com/health  
-**Canonical evaluation:** [`docs/evaluation/summary.md`](docs/evaluation/summary.md)  
-**Production verification:** [`docs/PRODUCTION_VERIFICATION.md`](docs/PRODUCTION_VERIFICATION.md)
+**Final demo script:** [`docs/DEMO_SCRIPT.md`](docs/DEMO_SCRIPT.md)  
+**Judge Q&A:** [`docs/JUDGE_QA.md`](docs/JUDGE_QA.md)  
+**Submission copy:** [`docs/SUBMISSION.md`](docs/SUBMISSION.md)
 
-## Core principle
+---
+
+## The product in 30 seconds
+
+Razorpay already processes a merchant's payments. Revenue Autopilot sits one layer above that payment evidence and asks:
+
+> Where is conversion leaking, what bounded configuration change is worth testing, is that test safe for this merchant, and did it actually work?
+
+The answer moves through explicit trust boundaries:
+
+```text
+payment evidence
+    ↓
+deterministic metrics + opportunity detection
+    ↓
+deterministic opportunity portfolio
+    ↓
+structured prior experiment memory
+    ↓
+evidence-grounded LLM diagnosis
+    ↓
+deterministic stale-repeat validation
+    ↓
+champion-aware experiment planner
+    ↓
+deterministic merchant policy
+    ↓
+Razorpay execution boundary
+    ↓
+fixed-horizon measurement
+    ↓
+KEEP / ROLLBACK / INCONCLUSIVE
+    ↓
+champion + learned memory + hash-chained audit
+    ↓
+next optimization cycle
+```
 
 > **AI proposes. Deterministic policy authorizes. The execution boundary acts. Statistics decides. Persisted outcomes shape the next cycle.**
 
+The LLM never decides whether an experiment is safe, never calls Razorpay directly, never chooses its own statistical success rule, and never promotes its own treatment.
+
+---
+
+## Why this is not "LLM + dashboard"
+
+| Failure mode in a naive AI growth agent | Revenue Autopilot boundary |
+| --- | --- |
+| Model intuition decides what matters | Deterministic opportunity portfolio |
+| Hallucinated reasoning becomes action | Structured output + evidence validation |
+| Agent repeats failed ideas forever | Persisted experiment memory + stale-repeat checks |
+| Model chooses unsafe financial parameters | Deterministic merchant policy |
+| Retried external writes create duplicates | Operation ledger + request hashing + ambiguous-write protection |
+| Agent declares its own idea successful | Fixed-horizon statistics alone decides the result |
+| A past winner is forgotten | KEEP-derived champion becomes future control |
+| Synthetic evaluation is presented as real merchant evidence | Explicit real-vs-synthetic measurement boundary |
+| Demo history is difficult to trust | Append-only SHA-256 hash-chained audit |
+
+---
+
+## What is implemented
+
+### Adaptive optimization
+
+- deterministic conversion/GMV/segment/payment-method metrics
+- deterministic conversion-divergence opportunity detection
+- deterministic opportunity portfolio / next-best opportunity
+- structured terminal experiment memory
+- evidence-grounded LLM diagnosis
+- schema + evidence + semantic validation
+- deterministic stale-repeat prevention
+- champion-aware experiment planning
+- deterministic merchant policy
+- application-level external-write idempotency
+- fixed-horizon statistical evaluation
+- KEEP-derived champion promotion
+- history-preserving repeat cycles
+- Merchant Intelligence read model/UI
+- tamper-evident audit chain
+
+### Merchant data path
+
+Revenue Autopilot now supports more than the canonical demo merchant:
+
+- create a merchant from canonical CSV payment history;
+- append later transaction revisions;
+- deterministically deduplicate repeated external rows;
+- preserve previous observations rather than replaying them as new evidence;
+- run metrics, detection, ranking, diagnosis, planning, and policy on uploaded merchant evidence.
+
+### One-click canonical experiment interaction
+
+For TechBazaar's sealed evaluation environment, the merchant UI exposes one bounded **Run Experiment** operation instead of repeated batch clicks.
+
+The one-click service still requires:
+
+- persisted policy `APPROVE`;
+- an active deployed treatment resource;
+- the existing Task 11 runtime;
+- the existing Task 12 statistical engine.
+
+It does not call the LLM, rerun policy, or silently perform Razorpay rollback. Repeated requests after a result are idempotent.
+
+---
+
+## Real merchant vs synthetic evaluation boundary
+
+This distinction is deliberate and important.
+
+### TechBazaar
+
+TechBazaar is the canonical deterministic evaluation merchant. Its hidden causal model exists so the system can be tested against known but concealed intervention effects.
+
+For this merchant only:
+
 ```text
-Merchant-visible payment data
-        ↓
-Metric engine + opportunity detector
-        ↓
-Deterministic opportunity portfolio
-        ↓
-Persisted experiment memory
-        ↓
-Evidence-grounded LLM diagnosis
-        ↓
-Deterministic stale-repeat validation
-        ↓
-Champion-aware experiment planner
-        ↓
-Merchant policy gate
-        ↓
-Razorpay execution boundary
-        ↓
-Fixed-horizon experiment runtime
-        ↓
-KEEP / ROLLBACK / INCONCLUSIVE
-        ↓
-Champion state + learned memory + hash-chained audit
-        ↓
-Next optimization cycle
+approved treatment
+  -> sealed deterministic experiment runtime
+  -> fixed horizon
+  -> statistics
 ```
 
-The LLM never decides whether an experiment is safe, never emits raw Razorpay request JSON, never calls Razorpay directly, and never decides whether its treatment won.
+### Uploaded merchant
 
-## What makes the system adaptive
+An uploaded merchant's historical observations may feed detection and reasoning, but Revenue Autopilot **will not manufacture experimental outcomes using TechBazaar's hidden causal world**.
 
-### 1. Structured merchant experiment memory
+At measurement time the product enters:
 
-Terminal experiments are reconstructed from the existing experiment, policy, result, and resource tables. There is no second mutable “AI memory” database.
+> **Awaiting live outcomes**
 
-The memory layer records, per segment and intervention:
+and the backend returns:
 
-- treatment configuration and deterministic fingerprint
-- merchant-policy outcome
-- KEEP / ROLLBACK / INCONCLUSIVE result
-- absolute and relative lift
-- p-value and confidence interval
-- execution-resource state
-- previous trial counts
+```text
+LIVE_EXPERIMENT_TRAFFIC_REQUIRED
+```
 
-Active work is excluded until it reaches a safe terminal boundary.
+Zero synthetic experiment attempts and zero invented `ExperimentResult` rows are generated for that merchant.
 
-### 2. Deterministic opportunity portfolio
+A production checkout/payment-event integration must provide authoritative assigned control/treatment outcomes before the existing statistics engine can evaluate the experiment.
 
-Untouched opportunities are ranked without an LLM. The ranker uses observable conversion gap, affected volume, captured average order value, merchant-policy feasibility, and prior terminal-trial history.
+See [`docs/task-22-e2e-boundaries.md`](docs/task-22-e2e-boundaries.md).
 
-The history factor is transparent:
+---
+
+## Razorpay integration
+
+The repository contains a real Razorpay Test Mode HTTP client and deterministic executor for Payment Links and Orders.
+
+Supported execution behavior includes:
+
+- payment-method configuration;
+- partial payments;
+- expiry configuration;
+- verified existing Offer association where supported;
+- independent resource fetch;
+- cancellation/rollback;
+- application-level idempotency;
+- fail-closed ambiguous external writes.
+
+The executor only accepts a persisted merchant-policy `APPROVE`. It does not rerun the model or policy and does not use the synthetic causal model.
+
+### Hosted demo disclosure
+
+The public deployment currently uses:
+
+```text
+RAZORPAY_EXECUTION_MODE=simulated
+```
+
+Hosted resources therefore use `demo_...` IDs and the product explicitly states that those resources do not exist in the Razorpay dashboard.
+
+Do not present a `demo_...` ID as a real Razorpay resource.
+
+### Controlled real Test Mode proof
+
+The repository includes:
+
+```text
+scripts/verify_razorpay_autopilot.py
+```
+
+The credential-gated verifier proves the exact executor chain using one temporary Test Mode Payment Link:
+
+```text
+persisted experiment
+  -> deterministic policy APPROVE
+  -> real executor deploy
+  -> real plink_...
+  -> persisted resource + operation ledger
+  -> independent Razorpay fetch
+  -> unchanged fixed-horizon runtime/statistics
+  -> genuine ROLLBACK on controlled harmful-expiry fixture
+  -> real executor cancellation
+  -> independent cancellation fetch
+  -> valid audit chain
+```
+
+It:
+
+- requires `RAZORPAY_EXECUTION_MODE=real`;
+- accepts only `rzp_test_...` key IDs;
+- refuses live-mode keys;
+- uses a temporary local database;
+- attempts cleanup if the normal proof path fails after resource creation.
+
+The proof harness itself is covered by an offline CI regression with a stateful fake Razorpay client while keeping the real planner, policy, executor persistence/idempotency, runtime, statistics, rollback, and audit logic.
+
+**Important:** offline CI proves the harness/domain chain, not an external Test Mode request. Claim external Razorpay Test Mode verification only after the credential-gated script actually returns `PASS` and the matching `plink_...` has been independently observed.
+
+See [`docs/RAZORPAY_TEST_MODE_PROOF.md`](docs/RAZORPAY_TEST_MODE_PROOF.md).
+
+---
+
+## Adaptive memory and champion–challenger
+
+Terminal experiment state is reconstructed from persisted domain truth rather than a second opaque "AI memory" database.
+
+Memory contains, per segment/intervention:
+
+- treatment configuration/fingerprint;
+- merchant-policy outcome;
+- KEEP / ROLLBACK / INCONCLUSIVE;
+- absolute/relative lift;
+- p-value and confidence interval;
+- resource state;
+- prior terminal-trial count.
+
+Deterministic code then enforces:
+
+- exact policy-rejected configurations stay blocked;
+- exact prior ROLLBACK/INCONCLUSIVE proposals are blocked when evidence is materially unchanged;
+- reconsideration requires explicit material evidence change;
+- one bounded corrective LLM attempt is allowed before failing closed.
+
+Champion state is also derived from persisted statistical truth:
+
+- baseline merchant configuration = Champion v1;
+- only `KEEP` promotes a treatment;
+- later experiments of that intervention type inherit the champion as control;
+- `ROLLBACK` / `INCONCLUSIVE` leave champion unchanged;
+- an identical challenger is rejected as meaningless.
+
+---
+
+## Deterministic opportunity portfolio
+
+Untouched opportunities are ranked without an LLM using observable evidence such as conversion gap, segment volume, captured average order value, merchant-policy feasibility, and prior terminal trials.
+
+The transparent history term is:
 
 ```text
 history_factor = 1 / (1 + prior_terminal_trials)
 ```
 
-The resulting GMV value is labelled an **opportunity-sizing proxy**. It is not predicted revenue, booked revenue, profit, or a causal uplift claim.
+Any displayed GMV value is an **opportunity-sizing proxy**. It is not realized revenue, profit, or a causal forecast.
 
-Partially started cycles always resume before any new candidate is ranked.
+Partially started cycles resume before a new candidate is ranked.
 
-### 3. Memory-aware diagnosis
+---
 
-The LLM receives compact prior experiment history for the affected merchant segment. Deterministic code then prevents an exact stale semantic proposal from being persisted:
+## Fixed-horizon statistics
 
-- an exact prior policy-rejected proposal stays blocked;
-- an exact prior ROLLBACK/INCONCLUSIVE proposal is blocked when observable evidence has not materially changed;
-- reconsideration is allowed only after explicit material evidence change, such as a >=2 percentage-point rate movement or substantial new segment observations.
+The experiment does not stop just because an interim result looks favorable.
 
-If a valid structured proposal is rejected as a stale repeat, the diagnosis boundary permits one bounded corrective LLM attempt. Nothing is persisted until the proposal passes schema, evidence, semantic, and memory checks.
+Task 12 evaluates only after both variants reach the configured sample target and returns:
 
-### 4. Champion–challenger state
+- `KEEP`
+- `ROLLBACK`
+- `INCONCLUSIVE`
 
-Champion state is derived from real statistical `KEEP` results rather than a mutable flag.
+using a deterministic two-proportion test plus practical absolute-lift threshold.
 
-- baseline merchant configuration starts as Champion v1;
-- only a KEEP treatment can be promoted;
-- later experiments of the same intervention type inherit the current champion as their control;
-- ROLLBACK and INCONCLUSIVE leave the champion unchanged;
-- a challenger identical to the current champion is rejected as meaningless.
+The LLM does not participate in the statistical decision.
 
-### 5. Merchant Intelligence console
+---
 
-`/intelligence` exposes only persisted deterministic truth:
+## Preserved hosted verification snapshot
 
-- current champion and promoted configurations
-- terminal trial counts
-- policy rejection counts
-- opportunity portfolio / next-best candidate when one exists
-- learned segment × intervention history
-- newest terminal experiment outcomes
+Task 20 exercised a third adaptive optimization cycle against the hosted deployment and preserved all earlier history.
 
-React does not recompute ranking, memory, or champion logic.
-
-## Why this is different
-
-| Risk in a naive AI growth agent | Revenue Autopilot boundary |
-| --- | --- |
-| Hallucinated reasoning becomes action | Strict structured output + evidence-reference validation |
-| Agent repeats failed ideas forever | Persisted experiment memory + deterministic stale-repeat validation |
-| Model chooses what to optimize using opaque intuition | Deterministic opportunity portfolio |
-| Model chooses unsafe financial parameters | Deterministic merchant policy |
-| Retried external writes create duplicates | Application-level operation ledger + ambiguous-write protection |
-| Agent declares its own idea successful | Fixed-horizon statistics alone decides KEEP / ROLLBACK / INCONCLUSIVE |
-| A past winner is forgotten | KEEP-derived champion state becomes the future control |
-| Benchmark leaks the hidden answer | Strategy selection happens before sealed causal scoring |
-| Demo history is hard to trust | Append-only application events + SHA-256 hash chain |
-
-## Trust architecture
-
-```mermaid
-flowchart TD
-    A[Payment attempts] --> B[Metric engine]
-    B --> C[Opportunity detector]
-    C --> D[Opportunity portfolio]
-    D --> E[Evidence catalog]
-    E --> F[Experiment memory]
-    F --> G[LLM diagnosis]
-    G --> H[Schema + evidence + stale-repeat validation]
-    H --> I[Champion-aware planner]
-    I --> J[Merchant policy]
-    J -->|REJECT| K[Stop safely]
-    J -->|APPROVE| L[Execution boundary]
-    L --> M[Sticky experiment runtime]
-    M --> N[Fixed-horizon statistics]
-    N --> O[KEEP / ROLLBACK / INCONCLUSIVE]
-    O --> P[Champion + learned memory]
-    P --> D
-    C --> Q[Hash-chained audit]
-    G --> Q
-    I --> Q
-    J --> Q
-    L --> Q
-    M --> Q
-    N --> Q
-```
-
-See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the detailed trust boundaries.
-
-## Hosted demo disclosure
-
-The public demo uses **`RAZORPAY_EXECUTION_MODE=simulated`** because merchant Test Mode API credentials require Razorpay account onboarding/KYC that was unavailable for this submission account.
-
-This is intentionally visible in the product. Simulated resources use `demo_...` IDs and the UI states that no Razorpay API request was made and the resource does not exist in the Razorpay dashboard.
-
-The repository still contains the real Razorpay Test Mode client and executor path for Payment Links and Orders. Real mode requires `rzp_test_...` credentials; live-mode keys are not accepted by the demo workflow.
-
-The hosted LLM boundary uses the OpenAI-compatible SDK and is currently routed through OpenRouter. Provider output is validated after generation.
-
-## Current production-verified state
-
-Task 20 ran a third adaptive optimization cycle against the hosted deployment and completed successfully.
-
-Current live learning state:
+Snapshot after that verification:
 
 - terminal trials: **3**
-- statistical outcomes: **3 INCONCLUSIVE**
-- policy rejections: **0** in the hosted history
+- hosted statistical outcomes: **3 INCONCLUSIVE**
 - promoted treatments: **0**
-- current champion: **v1 / merchant baseline**
-- audit chain: **verified**
+- champion: **v1 / merchant baseline**
+- audit chain: **valid**
 
-The third verified cycle used opportunity `0e500ccd-6c3d-4ade-a06c-afc3d2cd24e6` and experiment `5277a2df-c1a5-4009-9320-c97c3576ff38`.
+Final preserved experiment:
 
-The live LLM explicitly reasoned over prior experiment history and proposed `payment_method_config` after the observable android_budget evidence had materially changed. The deterministic memory guard accepted reconsideration under that changed evidence instead of treating it as an unqualified stale repeat.
+```text
+opportunity: 0e500ccd-6c3d-4ade-a06c-afc3d2cd24e6
+experiment:  5277a2df-c1a5-4009-9320-c97c3576ff38
+resource:    demo_plink_0a6348797891d7c8
+```
 
-Final fixed-horizon result:
+Fixed-horizon result:
 
 | Metric | Result |
 | --- | ---: |
@@ -191,29 +315,17 @@ Final fixed-horizon result:
 | Treatment conversion | 45.5% |
 | Absolute lift | -1.7 pp |
 | p-value | 0.6412 |
-| 95% CI | -9.0 pp to +5.5 pp |
 | Decision | `INCONCLUSIVE` |
 
-Because the result was not KEEP, Champion v1 correctly remained unchanged. The terminal trial was added to experiment memory exactly once.
+Because the experiment did not earn `KEEP`, Champion v1 correctly remained unchanged.
 
-Task 20's guarded production verifier also confirmed:
+These values are the **Task 20 verification snapshot**, not guaranteed permanent live counters.
 
-- previous trial count 2 -> new trial count 3
-- previous champion v1 -> new champion v1
-- memory-aware hypothesis validation passed
-- champion-control validation passed
-- active-cycle rollover protection returned HTTP 409
-- simulated resource namespace was used
-- audit-chain integrity remained valid
-- prior history remained persisted
+---
 
-The hosted demo resource for the latest cycle is `demo_plink_0a6348797891d7c8`.
+## Frozen evaluation benchmark
 
-Do not interpret this resource as a real Razorpay dashboard object.
-
-## Deterministic evaluation
-
-A separate frozen benchmark compares four strategies on identical paired synthetic cohorts:
+A separate deterministic benchmark compares four strategies on identical paired synthetic contexts:
 
 - `NO_OPTIMIZATION`
 - `RANDOM_INTERVENTION`
@@ -223,10 +335,8 @@ A separate frozen benchmark compares four strategies on identical paired synthet
 Canonical configuration:
 
 - 5 fixed seeds
-- 5 merchant segments
-- 5,000 contexts per segment per seed
-- paired contexts across strategies
-- frozen causal-model fingerprint `05642a18eb14a7d4a0ff3beebf892253f3eed68efeea4f25cd56237c64e0750d`
+- 5 segments
+- 5,000 paired contexts per segment per seed
 
 | Strategy | Mean conversion | Mean delta vs control |
 | --- | ---: | ---: |
@@ -235,80 +345,48 @@ Canonical configuration:
 | NO_OPTIMIZATION | 58.18% | 0.00 pp |
 | RULE_BASED | 57.65% | -0.52 pp |
 
-Autopilot recorded 5 policy rejections in the frozen evaluation rather than forcing every proposal into deployment.
+These are **synthetic deterministic evaluation results, not production revenue claims**.
 
-These are **synthetic deterministic benchmark results, not production revenue claims**.
+See [`docs/evaluation/summary.md`](docs/evaluation/summary.md).
 
-Run the benchmark locally:
+---
 
-```bash
-python scripts/run_evaluation.py
-```
-
-## Product flow
-
-1. **Observe** — compute attempts, capture/failure/abandonment, conversion, GMV, segment and payment-method metrics.
-2. **Detect** — identify conversion divergence using deterministic thresholds.
-3. **Prioritize** — rank untouched opportunities using the deterministic portfolio.
-4. **Remember** — reconstruct terminal experiment knowledge from persisted truth.
-5. **Diagnose** — ask the LLM for an evidence-grounded structured hypothesis with prior trial context.
-6. **Validate** — schema, evidence, semantic, and stale-repeat checks run before persistence.
-7. **Plan** — create a canonical experiment; use a promoted champion as control when one exists.
-8. **Authorize** — merchant policy returns APPROVE or REJECT; there is no override button.
-9. **Execute** — deploy through a locally idempotent Razorpay execution boundary.
-10. **Measure** — deterministic sticky assignment runs until both fixed-horizon sample targets are met.
-11. **Decide** — statistics emits KEEP, ROLLBACK, or INCONCLUSIVE.
-12. **Learn** — terminal history updates memory; KEEP alone advances champion state.
-13. **Audit** — every meaningful lifecycle transition is linked in the merchant hash chain.
-
-## Repeatable optimization cycles
-
-A completed or safely stopped cycle does not require a database reset.
-
-**Start New Optimization Cycle**:
-
-- preserves prior opportunities, experiments, results, resources, attempts, and audit events;
-- resolves the finished opportunity rather than deleting it;
-- resumes partially completed work before considering a new candidate;
-- uses the portfolio when untouched detected candidates exist;
-- otherwise permits fresh deterministic detection;
-- refuses rollover while a deployed/running/evaluation/rollback cycle is active.
-
-## Frontend
+## Product surfaces
 
 The Next.js operations console exposes:
 
-- `/overview` — merchant metrics, current lifecycle state, segment/payment-method evidence, recent activity
-- `/intelligence` — champion state, learned experiment memory, opportunity portfolio, terminal trials
+- `/overview` — merchant metrics, lifecycle state, segment/payment-method evidence
+- `/intelligence` — champion state, learned experiment memory, opportunity portfolio
 - `/autopilot` — current and historical optimization cycles
-- `/autopilot/[opportunityId]` — evidence -> AI -> plan -> policy -> execution -> statistics detail
+- `/autopilot/[opportunityId]` — evidence → AI → plan → policy → execution → statistics
 - `/audit` — expandable hash-chained audit history
+- `/onboarding` — merchant creation + initial CSV history
+- `/data` — incremental payment-data append
 
-The cycle detail page visibly separates **Observed Evidence** from **AI Analysis**, labels simulated hosted resources, and identifies the final decision as statistical rather than AI-generated.
+The cycle view visibly separates **Observed Evidence** from **AI Analysis** and labels the statistical decision independently from the LLM.
 
-## API
+---
 
-Core public routes under `/api/v1` include:
+## Failure behavior worth testing
 
-| Method | Path | Purpose |
-| --- | --- | --- |
-| `GET` | `/api/v1/merchants/{merchant_id}/overview` | Merchant metrics and current lifecycle state |
-| `GET` | `/api/v1/merchants/{merchant_id}/intelligence` | Portfolio, champion and learned experiment memory |
-| `GET` | `/api/v1/merchants/{merchant_id}/opportunities` | Persisted opportunities |
-| `GET` | `/api/v1/opportunities/{opportunity_id}/cycle` | Complete lifecycle read model |
-| `GET` | `/api/v1/merchants/{merchant_id}/audit` | Merchant audit history |
-| `POST` | `/api/v1/merchants/{merchant_id}/detect` | Detect opportunities |
-| `POST` | `/api/v1/opportunities/{opportunity_id}/diagnose` | Generate + validate diagnosis |
-| `POST` | `/api/v1/hypotheses/{hypothesis_id}/plan` | Create experiment plan |
-| `POST` | `/api/v1/experiments/{experiment_id}/policy` | Evaluate merchant policy |
-| `POST` | `/api/v1/experiments/{experiment_id}/deploy` | Deploy through configured execution mode |
-| `POST` | `/api/v1/experiments/{experiment_id}/run` | Run one experiment batch |
-| `POST` | `/api/v1/experiments/{experiment_id}/evaluate` | Produce fixed-horizon decision |
-| `POST` | `/api/v1/experiments/{experiment_id}/rollback` | Cancel treatment after ROLLBACK |
-| `POST` | `/api/v1/merchants/{merchant_id}/autopilot/step` | Advance one legal lifecycle transition |
-| `GET` | `/health` | Health check |
+Revenue Autopilot fails closed for cases including:
 
-The dashboard also uses the intentionally non-OpenAPI control endpoint `POST /api/v1/merchants/{merchant_id}/autopilot/new-cycle` for explicit lifecycle rollover.
+- malformed structured LLM output;
+- invalid evidence references;
+- unchanged stale failed/inconclusive proposals;
+- exact policy-rejected repeats;
+- unsupported intervention configuration;
+- excessive exposure/discount/financial exposure;
+- missing verified Offer mapping;
+- ambiguous external write state;
+- insufficient fixed-horizon samples;
+- attempted rollover of an active/deployed cycle;
+- challenger identical to champion;
+- uploaded merchant attempting to use synthetic experiment outcome generation.
+
+No unsafe proposal is silently rewritten into an approved proposal.
+
+---
 
 ## Local development
 
@@ -325,7 +403,7 @@ pip install -e ".[dev]"
 uvicorn app.main:app --reload
 ```
 
-From the repository root, create missing canonical demo rows non-destructively:
+Optional canonical demo bootstrap from repository root:
 
 ```bash
 python scripts/bootstrap_demo.py
@@ -342,6 +420,8 @@ npm run dev
 Default local frontend: `http://localhost:3000`  
 Default local backend: `http://localhost:8000`
 
+---
+
 ## Configuration
 
 Backend:
@@ -351,12 +431,11 @@ APP_ENV=production
 DATABASE_URL=<PostgreSQL or SQLite URL>
 CORS_ALLOWED_ORIGINS=<comma-separated frontend origins>
 OPENAI_API_KEY=<LLM provider key>
-OPENAI_BASE_URL=<optional OpenAI-compatible base URL>
-OPENAI_MODEL=<model or router name>
+OPENAI_MODEL=<model/router name>
 RAZORPAY_EXECUTION_MODE=real|simulated
 RAZORPAY_KEY_ID=<required in real mode>
 RAZORPAY_KEY_SECRET=<required in real mode>
-RAZORPAY_TEST_OFFER_ID=<optional verified pre-created test Offer ID>
+RAZORPAY_TEST_OFFER_ID=<optional verified pre-created Test Mode Offer ID>
 ```
 
 Frontend:
@@ -366,23 +445,9 @@ NEXT_PUBLIC_API_BASE_URL=<backend HTTPS origin>
 API_INTERNAL_BASE_URL=<backend HTTPS origin>
 ```
 
-Never put backend secrets in `NEXT_PUBLIC_` variables.
+Never put backend secrets in `NEXT_PUBLIC_` variables or commit credentials.
 
-## Deployment
-
-Current hosted stack:
-
-- frontend: Vercel
-- backend: Render
-- database: Supabase PostgreSQL
-- LLM: OpenAI-compatible SDK, hosted demo routed through OpenRouter
-- payment execution: explicit simulated hosted adapter; real Razorpay Test Mode path remains implemented
-
-Read-only smoke test:
-
-```bash
-BASE_URL=https://merchant-revenue-autopilot-api.onrender.com python scripts/smoke_deployment.py
-```
+---
 
 ## Verification
 
@@ -403,52 +468,48 @@ npm run typecheck
 npm run build
 ```
 
-Task 20 adaptive production verification is implemented in `scripts/verify_production_v2.py` and guarded by `.github/workflows/production-verification.yml`. It is intentionally write-capable and should not be rerun casually after submission freeze.
+Controlled Razorpay Test Mode proof, from repository root after configuring **Test Mode** credentials locally:
 
-## Failure behavior worth testing
-
-The system fails closed for:
-
-- missing/malformed LLM configuration
-- malformed structured model output
-- invalid evidence references
-- stale exact failed/inconclusive proposals without material evidence change
-- exact policy-rejected repeats
-- disallowed intervention or invalid treatment configuration
-- excessive exposure/discount/financial exposure
-- unmapped Offer IDs
-- ambiguous external writes
-- insufficient sample horizon
-- active-cycle rollover attempts
-- challenger identical to current champion
-
-## Repository map
-
-```text
-backend/app/engines/        detector, diagnosis, planner, policy, statistics
-backend/app/services/       orchestration, memory, portfolio, champion, executor, audit, cycles
-backend/app/simulation/     deterministic merchant world + sealed causal model
-backend/app/evaluation/     paired benchmark and report generation
-backend/app/api/            FastAPI routes and typed public schemas
-frontend/                   Next.js operations console + Merchant Intelligence
-scripts/                    bootstrap, smoke, evaluation, production verification
-docs/evaluation/            committed benchmark summary and full JSON
+```bash
+python scripts/verify_razorpay_autopilot.py
 ```
 
-## Submission material
+Do not run write-capable hosted production verifiers casually after submission freeze.
 
-- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — trust + adaptive architecture
-- [`docs/PRODUCTION_VERIFICATION.md`](docs/PRODUCTION_VERIFICATION.md) — hosted release evidence including Task 20
-- [`docs/DEMO_SCRIPT.md`](docs/DEMO_SCRIPT.md) — judge demo flow
-- [`docs/SUBMISSION.md`](docs/SUBMISSION.md) — submission-ready copy
-- [`docs/JUDGE_QA.md`](docs/JUDGE_QA.md) — judge-facing technical Q&A
-- [`docs/evaluation/summary.md`](docs/evaluation/summary.md) — frozen benchmark
+---
 
-## Limitations
+## Current limitations
 
-- Hosted Razorpay execution is simulated and clearly labelled because Test Mode credentials were unavailable without merchant onboarding/KYC.
-- The benchmark is synthetic and deterministic; it is not evidence of production merchant uplift.
-- The benchmark diagnosis adapter is deterministic for reproducibility and does not use live OpenRouter output.
-- Champion behavior is implemented and verified, but the hosted merchant remains Champion v1 because no live treatment has earned a KEEP result.
-- The current product demonstrates one canonical merchant profile rather than complete multi-tenant onboarding.
-- The hash chain is an application-level tamper-evidence mechanism, not a distributed ledger.
+- the public hosted Razorpay adapter is simulated;
+- external Test Mode execution should only be claimed after the credential-gated proof actually passes;
+- uploaded merchants do not yet have authoritative checkout assignment + Razorpay payment-event/webhook ingestion for live experiment outcomes;
+- authentication, tenant authorization, and merchant credential management are not production-complete;
+- scheduled/background experiment progression is not production-complete;
+- synthetic benchmark results do not establish external validity across Razorpay's merchant population;
+- the application hash chain is tamper-evident audit infrastructure, not a blockchain.
+
+---
+
+## Next production work
+
+1. authoritative control/treatment assignment at checkout;
+2. Razorpay payment-event/webhook ingestion bound to persisted assignments;
+3. authentication + tenant/credential isolation;
+4. scheduled/background experiment progression;
+5. external-write reconciliation and stronger concurrent database controls;
+6. consented real-merchant evaluation before production uplift claims.
+
+Merchant CSV onboarding, incremental append/dedup, one-click canonical experiment interaction, and real-vs-synthetic measurement separation are already implemented.
+
+---
+
+## Documentation
+
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — system/trust architecture
+- [`docs/DEMO_SCRIPT.md`](docs/DEMO_SCRIPT.md) — final 5-minute judge flow
+- [`docs/JUDGE_QA.md`](docs/JUDGE_QA.md) — architecture defense / judge questions
+- [`docs/SUBMISSION.md`](docs/SUBMISSION.md) — final submission copy
+- [`docs/RAZORPAY_TEST_MODE_PROOF.md`](docs/RAZORPAY_TEST_MODE_PROOF.md) — credential-gated external proof
+- [`docs/task-22-e2e-boundaries.md`](docs/task-22-e2e-boundaries.md) — real-vs-synthetic measurement boundary
+- [`docs/evaluation/summary.md`](docs/evaluation/summary.md) — frozen evaluation
+- [`docs/PRODUCTION_VERIFICATION.md`](docs/PRODUCTION_VERIFICATION.md) — hosted verification history
