@@ -3,8 +3,7 @@
 These routes are dashboard controls rather than additions to the frozen Task 15
 public OpenAPI contract, so they are intentionally excluded from schema output.
 They never run opportunity detection themselves: they only append new merchant
-evidence. The next Autopilot cycle decides whether a fresh detection pass is
-now warranted.
+evidence and expose whether the detector has a genuinely new revision to scan.
 """
 
 from __future__ import annotations
@@ -14,13 +13,18 @@ import logging
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
-from app.api.data_schemas import DemoPeriodResponse, IncrementalCsvResponse
+from app.api.data_schemas import (
+    DemoPeriodResponse,
+    DetectionReadinessResponse,
+    IncrementalCsvResponse,
+)
 from app.db.session import get_db
 from app.services.incremental_data import (
     IncrementalDataConflictError,
     IncrementalDataError,
     IncrementalDataSourceError,
     append_next_demo_period,
+    detection_readiness,
     ingest_incremental_csv,
 )
 from app.services.onboarding import (
@@ -54,6 +58,28 @@ def _incremental_response(result) -> IncrementalCsvResponse:
         simulated_observations=status.simulated_observations,
         segment_count=status.segment_count,
     )
+
+
+@router.get(
+    "/merchants/{merchant_id}/detection-readiness",
+    response_model=DetectionReadinessResponse,
+    include_in_schema=False,
+)
+def read_detection_readiness(
+    merchant_id: str,
+    db: Session = Depends(get_db),
+) -> DetectionReadinessResponse:
+    try:
+        readiness = detection_readiness(db, merchant_id)
+        return DetectionReadinessResponse(
+            merchant_id=readiness.merchant_id,
+            ready=readiness.ready,
+            reason=readiness.reason,
+            latest_opportunity_at=readiness.latest_opportunity_at,
+            latest_data_append_at=readiness.latest_data_append_at,
+        )
+    except MerchantOnboardingNotFoundError as exc:
+        raise _error(404, "MERCHANT_NOT_FOUND", _safe_message(exc)) from None
 
 
 @router.post(
