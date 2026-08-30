@@ -1,0 +1,131 @@
+name: Task 19B focused selector patch
+
+on:
+  push:
+    branches: [task19b/opportunity-portfolio-ranking]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: ${{ !contains(github.event.head_commit.message, '[task19b-focus-patched]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: task19b/opportunity-portfolio-ranking
+
+      - name: Patch selector at the single source of truth
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          path = Path('backend/app/services/autopilot.py')
+          text = path.read_text()
+          marker = '''from app.services.executor import (
+              ExperimentExecutionConfigurationError,
+              deploy_experiment_treatment,
+              rollback_experiment_treatment,
+          )
+          '''
+          replacement = marker + 'from app.services.portfolio import build_opportunity_portfolio\n'
+          if 'from app.services.portfolio import build_opportunity_portfolio' not in text:
+              if marker not in text:
+                  raise SystemExit('autopilot import marker not found')
+              text = text.replace(marker, replacement, 1)
+
+          new_focus = '''def focus_opportunity(db: Session, merchant_id: str) -> Opportunity | None:
+              """Return the one active opportunity Autopilot should drive now.
+
+              Started work always wins: among active opportunities, the lifecycle
+              stage (experiment > hypothesis > untouched) is considered before any
+              portfolio ranking so an interrupted cycle is resumed deterministically.
+
+              Only when every candidate is untouched does Task 19B choose among them
+              using the explainable opportunity portfolio. If portfolio selection is
+              unavailable (for example, merchant policy is missing), the historical
+              severity/newest/id ordering remains the fail-visible fallback.
+              """
+              candidates = (
+                  db.query(Opportunity)
+                  .filter(Opportunity.merchant_id == merchant_id)
+                  .filter(Opportunity.status.in_(ACTIVE_OPPORTUNITY_STATUSES))
+                  .order_by(
+                      Opportunity.severity.desc(),
+                      Opportunity.created_at.desc(),
+                      Opportunity.id.asc(),
+                  )
+                  .all()
+              )
+              if not candidates:
+                  return None
+
+              staged = [(opportunity, _opportunity_stage(db, opportunity.id)) for opportunity in candidates]
+              best_stage = max(stage for _, stage in staged)
+              if best_stage > 0:
+                  # ``candidates`` already carries the deterministic legacy ordering.
+                  # Ranking never displaces work that has entered diagnosis/planning.
+                  return next(opportunity for opportunity, stage in staged if stage == best_stage)
+
+              untouched = [opportunity for opportunity, stage in staged if stage == 0]
+              portfolio = build_opportunity_portfolio(
+                  db,
+                  merchant_id,
+                  opportunities=untouched,
+              )
+              if portfolio.next_best_opportunity_id is not None:
+                  selected = next(
+                      (
+                          opportunity
+                          for opportunity in untouched
+                          if opportunity.id == portfolio.next_best_opportunity_id
+                      ),
+                      None,
+                  )
+                  if selected is not None:
+                      return selected
+
+              return untouched[0]
+          '''
+
+          pattern = re.compile(
+              r'def focus_opportunity\(db: Session, merchant_id: str\) -> Opportunity \| None:\n.*?\n\ndef _experiment_transition',
+              re.S,
+          )
+          text, count = pattern.subn(new_focus + '\n\ndef _experiment_transition', text, count=1)
+          if count != 1:
+              raise SystemExit(f'focus_opportunity replacement count={count}')
+          path.write_text(text)
+
+          test_path = Path('backend/tests/test_portfolio_cycle_selection.py')
+          tests = test_path.read_text()
+          tests = tests.replace(
+              'from app.services.cycles import _next_portfolio_focus, start_new_cycle',
+              'from app.services.cycles import start_new_cycle',
+          )
+          tests = tests.replace(
+              'assert autopilot.focus_opportunity(db, "merchant-a") is alpha\n    assert selected is beta',
+              'assert autopilot.focus_opportunity(db, "merchant-a") is beta\n    assert selected is beta',
+          )
+          tests = tests.replace(
+              'selected = _next_portfolio_focus(db, "merchant-a")',
+              'selected = autopilot.focus_opportunity(db, "merchant-a")',
+          )
+          test_path.write_text(tests)
+          PY
+
+          # Remove the redundant rollover-local selector. The canonical focus
+          # function now owns both resume and untouched-candidate selection.
+          git show origin/main:backend/app/services/cycles.py > backend/app/services/cycles.py
+
+      - name: Commit focused integration
+        run: |
+          git config user.name "Harsh Dinodia"
+          git config user.email "ghosttalk719@gmail.com"
+          git add backend/app/services/autopilot.py backend/app/services/cycles.py backend/tests/test_portfolio_cycle_selection.py
+          git diff --cached --check
+          git commit -m "feat: make portfolio ranking the canonical opportunity selector [task19b-focus-patched]"
+          git push origin HEAD:task19b/opportunity-portfolio-ranking
