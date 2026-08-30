@@ -20,6 +20,7 @@ from app.api.onboarding_schemas import (
 )
 from app.db.models import Merchant
 from app.db.session import get_db
+from app.services.csv_shape import validate_initial_csv_shape
 from app.services.onboarding import (
     MAX_CSV_BYTES,
     TECHBAZAAR_MERCHANT_ID,
@@ -109,6 +110,9 @@ async def onboard_merchant_with_csv(
     content = await file.read(MAX_CSV_BYTES + 1)
 
     try:
+        # Run shape validation before creating any merchant row. The semantic
+        # parser below still validates every field/value before commit.
+        validate_initial_csv_shape(content)
         merchant = register_merchant(
             db,
             name=name,
