@@ -1,6 +1,6 @@
 import Link from "next/link";
+import { getActiveMerchantId } from "@/lib/active-merchant";
 import { getOpportunities, getOverview } from "@/lib/api";
-import { MERCHANT_ID } from "@/lib/constants";
 import { describeApiError } from "@/lib/errors";
 import {
   AutopilotCycleList,
@@ -22,10 +22,6 @@ function currentOpportunityId(
       opportunity.status === "detected" || opportunity.status === "investigating",
   );
   if (active.length === 0) return null;
-
-  // Once a cycle has an experiment, that foreign key is the strongest
-  // persisted signal of which opportunity the backend is driving. Ignore it
-  // if the opportunity has already been resolved by a new-cycle rollover.
   const experimentOpportunityId = overview?.latest_experiment?.opportunity_id;
   if (
     experimentOpportunityId &&
@@ -33,11 +29,6 @@ function currentOpportunityId(
   ) {
     return experimentOpportunityId;
   }
-
-  // Waiting opportunities have not reached planning yet. Mirror the backend's
-  // deterministic active-opportunity ordering for that stage rather than using
-  // "newest inserted", which can point at a lower-severity row from the same
-  // detector pass.
   return [...active].sort((left, right) => {
     if (left.severity !== right.severity) return right.severity - left.severity;
     if (left.created_at !== right.created_at) {
@@ -48,9 +39,10 @@ function currentOpportunityId(
 }
 
 export default async function AutopilotPage() {
+  const merchantId = getActiveMerchantId();
   const [opportunitiesResult, overviewResult] = await Promise.allSettled([
-    getOpportunities(MERCHANT_ID),
-    getOverview(MERCHANT_ID),
+    getOpportunities(merchantId),
+    getOverview(merchantId),
   ]);
 
   if (opportunitiesResult.status === "rejected") {
@@ -61,8 +53,11 @@ export default async function AutopilotPage() {
           subtitle="Revenue optimization cycles detected from merchant payment performance."
         />
         <InlineError error={describeApiError(opportunitiesResult.reason)} />
-        <div className="mt-4">
+        <div className="mt-4 flex items-center gap-3">
           <RetryRefresh />
+          <Link href="/onboarding" className="rounded-md border border-gray-300 bg-white px-3 py-2 text-[13px] font-medium text-gray-700 hover:bg-gray-50">
+            Choose merchant data
+          </Link>
         </div>
       </>
     );
@@ -81,10 +76,7 @@ export default async function AutopilotPage() {
         title="Autopilot"
         subtitle="Revenue optimization cycles detected from merchant payment performance."
         right={
-          <Link
-            href="/overview"
-            className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-[13px] font-medium text-gray-700 hover:bg-gray-50"
-          >
+          <Link href="/overview" className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-[13px] font-medium text-gray-700 hover:bg-gray-50">
             Return to Overview
           </Link>
         }
