@@ -25,7 +25,8 @@ jobs:
   verify-production-journey:
     if: >-
       github.event_name == 'workflow_dispatch' ||
-      contains(github.event.head_commit.message, '[production-verify]')
+      contains(github.event.head_commit.message, '[production-verify]') ||
+      contains(github.event.head_commit.message, '[production-verify-resume:')
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
@@ -40,10 +41,20 @@ jobs:
       - name: Verify deployed demo lifecycle
         env:
           BASE_URL: https://merchant-revenue-autopilot-api.onrender.com
-          EXPECTED_OPPORTUNITY_ID: ${{ inputs.expected_opportunity_id }}
+          DISPATCH_EXPECTED_OPPORTUNITY_ID: ${{ inputs.expected_opportunity_id }}
+          HEAD_COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
         shell: bash
         run: |
           if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.mode }}" == "resume" ]]; then
+            EXPECTED_OPPORTUNITY_ID="$DISPATCH_EXPECTED_OPPORTUNITY_ID" \
+              python scripts/resume_production_journey.py --confirm-writes
+          elif [[ "$HEAD_COMMIT_MESSAGE" == *"[production-verify-resume:"* ]]; then
+            EXPECTED_OPPORTUNITY_ID="$(printf '%s' "$HEAD_COMMIT_MESSAGE" | sed -n 's/.*\[production-verify-resume:\([^]]*\)\].*/\1/p')"
+            if [[ -z "$EXPECTED_OPPORTUNITY_ID" ]]; then
+              echo "Resume marker is missing an opportunity id" >&2
+              exit 2
+            fi
+            export EXPECTED_OPPORTUNITY_ID
             python scripts/resume_production_journey.py --confirm-writes
           else
             python scripts/verify_production_journey.py --confirm-writes
