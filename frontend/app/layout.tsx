@@ -3,7 +3,7 @@ import { AppShell } from "@/components/app-shell";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Revenue Autopilot · TechBazaar Electronics",
+  title: "Revenue Autopilot",
   description:
     "Merchant revenue optimization console: observed evidence, AI proposals, deterministic policy, an explicit Razorpay execution boundary, and fixed-horizon statistics.",
 };
