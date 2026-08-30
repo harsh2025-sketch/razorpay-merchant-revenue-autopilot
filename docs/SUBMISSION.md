@@ -50,7 +50,7 @@ The public hosted demo runs `RAZORPAY_EXECUTION_MODE=simulated` because merchant
 
 The diagnosis boundary uses the OpenAI Python SDK with an OpenAI-compatible endpoint. The hosted demo is configured through OpenRouter. The model receives only merchant-visible opportunity evidence and returns a structured hypothesis.
 
-Model output is re-validated by deterministic code before persistence.
+Model output is schema-validated and then re-validated by deterministic code before persistence. Provider-side structured-output parse failures fail closed; the diagnosis boundary permits one bounded retry before returning an AI-output error. That retry cannot authorize or execute a payment action because nothing is persisted until validation succeeds.
 
 ## Evaluation
 
@@ -87,6 +87,9 @@ https://merchant-revenue-autopilot-api.onrender.com/health
 Evaluation summary:
 `docs/evaluation/summary.md`
 
+Production verification record:
+`docs/PRODUCTION_VERIFICATION.md`
+
 ## Stack
 
 Frontend: Next.js App Router, TypeScript, Tailwind CSS, Recharts, Lucide
@@ -101,7 +104,7 @@ Testing: pytest, Vitest, Testing Library, TypeScript typecheck, ESLint, Next.js 
 
 ## Demo merchant
 
-TechBazaar Electronics is a deterministic synthetic consumer-electronics merchant profile. The canonical baseline contains 6,112 payment attempts across android_budget, android_mid, ios_premium, repeat_buyer, and web_general segments.
+TechBazaar Electronics is a deterministic synthetic consumer-electronics merchant profile. The canonical baseline contains 6,112 payment attempts across android_budget, android_mid, ios_premium, repeat_buyer, and web_general segments. Controlled experiment runs append simulated traffic, so the hosted dashboard now contains more attempts while preserving the canonical baseline and earlier lifecycle history.
 
 ## Safety and failure behavior
 
@@ -114,14 +117,47 @@ The system fails closed when:
 - an Offer is not safely mapped
 - external write state is ambiguous
 - the experiment has not reached its sample horizon
+- a caller tries to skip a deployed or running cycle
 
 No unsafe proposal is silently rewritten into an approved one.
 
 ## Current demonstrated cycle
 
-The public demo contains a completed `android_budget` cycle. The detector found a segment conversion gap, the hosted LLM proposed a payment-method configuration experiment, merchant policy approved the bounded plan, the hosted simulated execution boundary created a clearly labelled demo resource, and the fixed-horizon statistical engine returned `INCONCLUSIVE` with p = 0.1939.
+The public demo contains two preserved completed `android_budget` cycles. The latest production-verified cycle is opportunity `a1761032-0637-40f3-8a44-38e02242683f`.
 
-That outcome is intentionally preserved because an honest inconclusive result is stronger evidence of the architecture than forcing the demo to produce a positive treatment result.
+For that cycle:
+
+- the detector observed 47.5% segment conversion versus a 58.6% comparison cohort
+- the hosted LLM proposed enabling partial payment with a 25% minimum first payment
+- the deterministic planner created a 10% treatment experiment with 200 minimum samples per variant and a 72-hour maximum duration
+- merchant policy returned `APPROVE`
+- the hosted simulated execution boundary created only `demo_plink_8b6f752dd2126b8a`, clearly labelled as simulated
+- fixed-horizon evaluation measured 46.9% control conversion versus 46.0% treatment conversion
+- absolute lift was -0.9 percentage points, p = 0.8071, and the 95% confidence interval crossed zero
+- the deterministic statistical decision was `INCONCLUSIVE`
+- audit-chain verification remained valid
+
+The earlier completed cycle and its result remain visible in history. The latest verification also proved that a new cycle cannot skip an active/deployed experiment: rollover returned `409 INVALID_TRANSITION` both before continuation and again after deployment.
+
+An honest inconclusive result is intentionally preserved instead of manipulating the demo toward a positive treatment outcome.
+
+## Production verification
+
+The hosted lifecycle was exercised through the public one-step orchestration surface rather than only through offline tests.
+
+The first guarded verification successfully created a second optimization cycle but exposed a production-only structured-output parsing failure at the LLM boundary before any experiment or resource existed. The defect was repaired with regression coverage, the exact persisted opportunity was resumed without creating a third cycle, and the resumed production journey completed successfully through diagnosis, planning, policy, simulated deployment, four runtime batches, and statistical evaluation.
+
+The final verification checked:
+
+- historical cycle preservation
+- exact-opportunity resume protection
+- rollover refusal while the cycle was active
+- one-step lifecycle ordering
+- simulated `demo_` resource namespace
+- fixed-horizon terminal decision
+- audit-chain integrity
+
+See `docs/PRODUCTION_VERIFICATION.md` for the release evidence.
 
 ## Limitations
 
