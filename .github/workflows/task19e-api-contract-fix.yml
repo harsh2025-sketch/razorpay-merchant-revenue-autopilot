@@ -1,0 +1,39 @@
+name: Task 19E API contract fix
+
+on:
+  push:
+    branches: [task19e/merchant-intelligence]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: ${{ !contains(github.event.head_commit.message, '[task19e-api-fixed]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: task19e/merchant-intelligence
+      - name: Update documented route surface
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('backend/tests/test_api.py')
+          text = path.read_text()
+          old = '''        f"{API}/merchants/{{merchant_id}}/overview",\n        f"{API}/merchants/{{merchant_id}}/opportunities",\n'''
+          new = '''        f"{API}/merchants/{{merchant_id}}/overview",\n        f"{API}/merchants/{{merchant_id}}/intelligence",\n        f"{API}/merchants/{{merchant_id}}/opportunities",\n'''
+          if old not in text:
+              raise SystemExit('route surface marker not found')
+          path.write_text(text.replace(old, new, 1))
+          PY
+          git diff --check
+      - name: Commit API contract update
+        run: |
+          git config user.name "Harsh Dinodia"
+          git config user.email "ghosttalk719@gmail.com"
+          git add backend/tests/test_api.py
+          git diff --cached --check
+          git commit -m "test: include Merchant Intelligence in API surface [task19e-api-fixed]"
+          git push origin HEAD:task19e/merchant-intelligence
