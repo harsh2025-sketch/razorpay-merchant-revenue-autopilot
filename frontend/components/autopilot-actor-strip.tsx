@@ -1,14 +1,10 @@
 "use client";
 
-import { Check, ChevronRight, X, AlertTriangle } from "lucide-react";
+import { AlertTriangle, Check, ChevronRight, X } from "lucide-react";
 import { actorStripStages } from "@/lib/labels";
 import type { AutopilotNextAction, AutopilotState } from "@/lib/types";
 
-/**
- * Compact actor strip: Detector → AI → Planner → Policy → Razorpay → Statistics.
- * Height ~28-36px. Its only job is to show that the LLM is one actor among
- * several deterministic ones - never a giant lifecycle diagram.
- */
+/** Compact actor strip: Detector → AI → Planner → Policy → Razorpay → Statistics. */
 export function AutopilotActorStrip({
   state,
   nextAction,
@@ -18,6 +14,14 @@ export function AutopilotActorStrip({
   nextAction: AutopilotNextAction | null;
   className?: string;
 }) {
+  if (state === "IDLE" && nextAction == null) {
+    return (
+      <p className={`text-[12px] text-gray-400 ${className}`}>
+        Lifecycle paused · new merchant evidence is required before Detector runs again
+      </p>
+    );
+  }
+
   const stages = actorStripStages(state, nextAction);
 
   return (
@@ -52,15 +56,9 @@ export function AutopilotActorStrip({
               ) : blocked ? (
                 <AlertTriangle size={11} aria-hidden />
               ) : current ? (
-                <span
-                  aria-hidden
-                  className="h-1.5 w-1.5 rounded-full bg-indigo-500"
-                />
+                <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-indigo-500" />
               ) : (
-                <span
-                  aria-hidden
-                  className="h-1.5 w-1.5 rounded-full bg-gray-300"
-                />
+                <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-gray-300" />
               )}
               {stage.label}
             </span>
