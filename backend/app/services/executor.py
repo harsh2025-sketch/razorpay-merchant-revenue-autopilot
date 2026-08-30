@@ -107,8 +107,8 @@ SUPPORTED_DEPLOYMENT_TYPES = frozenset(
 #: Razorpay rejects Payment Links with expiry further than 180 days.
 MAX_EXPIRY_HOURS = 24 * 180
 
-#: Conservative reference ID budget (well inside Razorpay's documented limits).
-MAX_REFERENCE_ID_LENGTH = 64
+#: Razorpay Payment Link API rejects reference_id values longer than 40 chars.
+MAX_REFERENCE_ID_LENGTH = 40
 
 _HASHED_REFERENCE_ID_LENGTH = 12
 
