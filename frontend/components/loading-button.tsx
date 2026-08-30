@@ -3,6 +3,7 @@
 import { Loader2 } from "lucide-react";
 
 type Variant = "primary" | "outline" | "danger";
+type ButtonType = "button" | "submit" | "reset";
 
 const VARIANT_CLASSES: Record<Variant, string> = {
   primary:
@@ -23,6 +24,7 @@ export function LoadingButton({
   loadingLabel,
   disabled = false,
   variant = "primary",
+  type = "button",
   onClick,
   children,
   className = "",
@@ -32,6 +34,7 @@ export function LoadingButton({
   loadingLabel?: string;
   disabled?: boolean;
   variant?: Variant;
+  type?: ButtonType;
   onClick?: () => void;
   children: React.ReactNode;
   className?: string;
@@ -39,7 +42,7 @@ export function LoadingButton({
 }) {
   return (
     <button
-      type="button"
+      type={type}
       onClick={onClick}
       disabled={disabled || loading}
       title={title}
