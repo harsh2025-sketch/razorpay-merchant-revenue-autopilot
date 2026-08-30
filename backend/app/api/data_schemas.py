@@ -34,3 +34,11 @@ class DemoPeriodResponse(DataModel):
     real_observations: int
     simulated_observations: int
     segment_count: int
+
+
+class DetectionReadinessResponse(DataModel):
+    merchant_id: str
+    ready: bool
+    reason: str
+    latest_opportunity_at: datetime | None = None
+    latest_data_append_at: datetime | None = None
