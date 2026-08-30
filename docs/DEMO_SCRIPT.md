@@ -1,182 +1,237 @@
-# Judge Demo Script
+# Final Judge Demo Script
 
-Target length: 3 to 4 minutes.
+Target length: **4:30 to 5:00 minutes**.
 
-## Opening — 15 seconds
+The demo has one job: make the architecture understandable before the judge has time to categorize this as "analytics dashboard + LLM".
+
+## Before recording
+
+1. Confirm the hosted frontend and backend are healthy.
+2. Do not mutate the preserved Task 20 hosted cycle unless necessary.
+3. If Razorpay Test Mode credentials are available, run:
+
+```text
+python scripts/verify_razorpay_autopilot.py
+```
+
+4. Only if that command returns `RAZORPAY AUTOPILOT TEST MODE PROOF: PASS`, capture the non-secret terminal output and the matching `plink_...` resource in Razorpay Test Mode for the execution proof beat.
+5. If the credential-gated proof has not passed, keep the hosted simulated-resource disclosure and **do not claim real Test Mode verification**.
+
+See `docs/RAZORPAY_TEST_MODE_PROOF.md`.
+
+---
+
+## 0:00–0:30 — establish the product and the safety thesis
 
 Open:
 
+```text
 https://merchant-revenue-autopilot-psi.vercel.app/overview
+```
 
 Say:
 
-"Merchant Revenue Autopilot is a learning AI growth agent for Razorpay merchants, but the model is deliberately not trusted with authority. AI proposes. Deterministic code prioritizes and authorizes. The execution boundary acts. Fixed-horizon statistics decides. Persisted outcomes then shape the next cycle."
+> "Razorpay already processes the merchant's payments. Revenue Autopilot uses payment evidence to discover where conversion is leaking and safely experiments with payment configurations to improve it. The important design choice is that AI does not control money: AI proposes, deterministic policy authorizes, the execution boundary acts, fixed-horizon statistics decides, and persisted outcomes shape the next experiment."
 
-## Step 1 — show the merchant problem — 20 seconds
+Point briefly to the Autopilot state and merchant metrics.
+
+Do **not** begin with model names, test counts, architecture diagrams, or benchmark numbers.
+
+---
+
+## 0:30–1:05 — show that the system starts from payment evidence
 
 On **Overview**, point to:
 
-- accumulated payment attempts
 - baseline conversion
 - captured GMV
+- payment attempts
 - weakest segment
-- completed Autopilot state
+- segment/payment-method evidence
 
 Say:
 
-"The system starts from payment data, not a chat prompt. Metrics and opportunity detection are deterministic. This hosted merchant preserves experiment traffic across cycles, so the live attempt count is larger than the frozen 6,112-attempt baseline."
+> "The system starts from payment data, not a chat prompt. Metrics, divergence detection, and opportunity prioritization are deterministic. The hosted TechBazaar environment preserves experiment traffic across cycles, so the accumulated attempt count is larger than the frozen 6,112-attempt canonical baseline."
 
-Do not describe the current 12,258 live attempts as the canonical baseline.
+Then mention the production-facing path in one sentence:
 
-## Step 2 — show that the system actually learns — 40 seconds
+> "A merchant can also be created from canonical CSV history and append later transaction revisions with deduplication; uploaded merchants are kept separate from the sealed TechBazaar evaluation world."
 
-Open **Intelligence**:
+Do not spend demo time uploading a CSV unless a judge asks.
 
-https://merchant-revenue-autopilot-psi.vercel.app/intelligence
+---
 
-Point to:
+## 1:05–1:55 — evidence first, AI second
 
-- Champion v1
-- Terminal Trials: 3
-- Kept Treatments: 0
-- Learned Intervention History
-- the two payment-method-config trials and one partial-payment trial
+Open the preserved Task 20 cycle:
 
-Say:
-
-"This is structured merchant learning, not chat memory. Terminal experiment, policy, statistical, and resource records are reconstructed into a read-only memory model. Active experiments are excluded until they are safely terminal. The merchant currently has three terminal trials, all inconclusive, so no treatment has earned promotion and the merchant baseline correctly remains Champion v1."
-
-Then point to the Opportunity Portfolio area.
-
-Say:
-
-"When untouched opportunities exist, deterministic code ranks them using observed conversion gap, affected volume, policy feasibility, and prior trial history. The GMV number is only an opportunity-sizing proxy, never a revenue forecast. Right now there is no untouched candidate because the final verification cycle is already complete."
-
-## Step 3 — open the latest adaptive cycle — 50 seconds
-
-Open **Autopilot** and choose the Latest cycle, opportunity `0e500ccd`.
-
-Direct link:
-
+```text
 https://merchant-revenue-autopilot-psi.vercel.app/autopilot/0e500ccd-6c3d-4ade-a06c-afc3d2cd24e6
+```
 
 Point first to **Observed Evidence**.
 
 Say:
 
-"The third verified cycle detected android_budget at about 47.3% conversion versus 58.6% for the comparison cohort, an 11.3-point gap. Evidence above this divider is deterministic and merchant-visible."
+> "This cycle detected android_budget at about 47.3% conversion versus 58.6% for the comparison cohort, an 11.3-point gap. Everything above the AI boundary is deterministic, merchant-visible evidence."
 
 Move below **AI ANALYSIS · GENERATED BY LLM**.
 
 Say:
 
-"The LLM received this evidence plus prior merchant experiment history. Notice that its reasoning explicitly references earlier partial-payment and payment-method experiments. It proposed enabling card, UPI, netbanking, and wallet."
+> "Only now does the LLM enter. It receives the evidence plus structured prior experiment memory and returns a schema-constrained causal hypothesis. It has no execution authority."
 
-Then add:
+Then:
 
-"This intervention type had been tested before. The system does not blindly allow that. Deterministic memory validation permits an exact previous inconclusive proposal only when observable evidence has materially changed. Task 20 verified that stale-repeat gate before persistence."
+> "This intervention family had been tested before. Deterministic memory validation blocks exact stale failed or inconclusive proposals unless observable evidence has materially changed, so the model cannot simply repeat the same idea forever."
 
-## Step 4 — champion–challenger + policy — 35 seconds
+---
+
+## 1:55–2:35 — champion–challenger and deterministic policy
 
 Point to **Experiment Plan** and **Policy Authorization**.
 
 Say:
 
-"The planner is champion-aware. Only a statistically significant KEEP can promote a treatment. Because no prior live experiment earned KEEP, Champion v1 is still the merchant default and is the control here. A future KEEP would make that treatment the control for later experiments of the same intervention type."
+> "The deterministic planner converts the hypothesis into a bounded champion–challenger experiment. Only a statistically significant KEEP can become a future champion. Because no hosted treatment has earned KEEP, Champion v1—the merchant baseline—correctly remains the control."
 
 Then:
 
-"The plan uses 10% treatment exposure, 200 minimum samples per variant, a 72-hour maximum duration, fixed guardrails, and a deterministic merchant-policy gate. There is no override button and no silent parameter clamping."
+> "Merchant policy evaluates intervention allow-lists, exposure, sample horizon, duration, discounts, financial exposure, and concurrent-experiment limits. Unsafe proposals are rejected; they are not silently rewritten into something easier to approve."
 
-## Step 5 — hosted execution disclosure — 20 seconds
+The memorable line is:
 
-Point to **Simulated Payment Resource**.
+> "AI proposes; deterministic systems authorize."
+
+---
+
+## 2:35–3:20 — prove the Razorpay boundary honestly
+
+Point to the hosted resource panel.
 
 Say:
 
-"The repository contains the real Razorpay Test Mode client and executor. The public deployment uses an explicitly simulated adapter because this submission account could not obtain Test Mode credentials without merchant onboarding and KYC. The product says that directly."
+> "The public hosted demo uses an explicitly simulated Razorpay adapter, so this `demo_...` resource is not presented as a real dashboard object. The repository's executor itself has a real Razorpay Test Mode path for Payment Links and Orders, with application-level idempotency and fail-closed ambiguous-write handling."
 
-Latest resource:
+### If the credential-gated Test Mode proof has PASSed
 
-`demo_plink_0a6348797891d7c8`
+Show the captured terminal/dashboard evidence for 10–20 seconds and say:
 
-Do not claim this resource exists in Razorpay's dashboard.
+> "Separately, I ran the same executor boundary against Razorpay Test Mode. Persisted policy approval created this real `plink_...`, the verifier independently fetched it, the unchanged experiment/statistics path produced ROLLBACK on the controlled harmful-expiry fixture, and the executor cancelled the same Test Mode resource."
 
-## Step 6 — statistical decision — 30 seconds
+Show the matching `plink_...` and cancelled state. Do not show credentials.
+
+### If the proof has not PASSed
+
+Skip the terminal/dashboard evidence and say only:
+
+> "A credential-gated controlled proof harness is included in the repository, but I am not claiming a Test Mode verification run that has not completed."
+
+Never describe `demo_...` as a real Razorpay resource.
+
+---
+
+## 3:20–3:55 — statistics, not the LLM, decides
 
 Point to **Statistical Result**.
 
 Say:
 
-"The experiment waited for the fixed sample horizon. It observed 47.2% control conversion versus 45.5% treatment conversion. Absolute lift was minus 1.7 percentage points, p was 0.6412, and the 95% confidence interval was roughly minus 9.0 to plus 5.5 points. So the deterministic result is INCONCLUSIVE. The LLM does not participate in that decision."
+> "This hosted experiment waited for its predefined fixed horizon. Control converted at 47.2%, treatment at 45.5%, absolute lift was minus 1.7 points, and p was 0.6412. The result is INCONCLUSIVE. The LLM does not participate in that decision."
 
 Then:
 
-"Because the treatment did not earn KEEP, the champion correctly remains v1 instead of pretending this experiment was successful."
+> "An inconclusive result is useful here: the system refuses to promote its own idea without evidence. Champion v1 stays v1."
 
-## Step 7 — show history preservation and audit — 25 seconds
+Do not call an opportunity-sizing proxy realized revenue.
 
-Return to **Autopilot** and point out all three preserved cycles.
+---
 
-Then open **Audit Log**.
+## 3:55–4:30 — show that this is a learning system
 
-Say:
-
-"New cycles append to the merchant's history instead of resetting it. Task 20 increased learned trial count from two to three exactly once, preserved prior results, and kept the audit chain valid. It also proved that a deployed or running cycle cannot be skipped: rollover was rejected with HTTP 409."
-
-Do not click **Start New Optimization Cycle** during the normal judged demo. The current state is intentionally frozen.
-
-## Step 8 — benchmark evidence — 25 seconds
-
-Open `docs/evaluation/summary.md` in GitHub.
-
-Say:
-
-"The live demo is only three hosted experiments, so strategy quality is evaluated separately with a frozen paired benchmark. Across five seeds, five segments, and 5,000 contexts per segment, Autopilot averaged 59.39% conversion versus 58.18% with no optimization, a plus 1.22 percentage-point mean delta. These are synthetic deterministic results, not production revenue claims."
-
-## Close — 15 seconds
-
-Say:
-
-"The project is not an AI recommendation dashboard. It is an adaptive control system around an AI revenue agent: deterministic prioritization, evidence-grounded reasoning, structured merchant memory, stale-repeat prevention, champion–challenger progression, policy authorization, duplicate-safe execution, fixed-horizon statistics, and tamper-evident audit."
-
-## Task 20 verified fallback
-
-If you do not want to mutate the hosted demo during judging, use the preserved final cycle. Task 20 already exercised the adaptive production journey:
+Open **Intelligence**:
 
 ```text
-HYPOTHESIS_PROPOSED
--> EXPERIMENT_PLANNED
--> POLICY_APPROVED
--> RESOURCE_DEPLOYED
--> EXPERIMENT_BATCH_RUN x5
--> EXPERIMENT_EVALUATED
+https://merchant-revenue-autopilot-psi.vercel.app/intelligence
 ```
 
-Task 20 result:
+Point to:
 
-- prior trial count: 2
-- final trial count: 3
-- prior champion: v1
-- final champion: v1
-- memory-aware hypothesis validation: PASS
-- champion-control validation: PASS
-- skip guard: PASS
-- terminal outcome: INCONCLUSIVE
-- audit integrity: PASS
-- learning persistence: PASS
+- Champion v1
+- terminal trial count
+- learned intervention history
+- opportunity portfolio / next-best candidate when present
 
-## If Render is waking from free-tier sleep
+Say:
 
-Refresh a read-only page once and wait. Do not repeatedly click mutation controls.
+> "This is structured merchant learning, not chat memory. Terminal policy, experiment, statistical, and resource records are reconstructed into the merchant's learned state. Past outcomes affect future ranking, stale-repeat validation, and champion control."
+
+Then:
+
+> "If a merchant uploads real historical data, the same detection and reasoning layers can operate on it. But once a treatment is deployed, the product refuses to manufacture experimental lift from the TechBazaar simulator—it waits for authoritative real control and treatment outcomes."
+
+That sentence is the Task 22 credibility boundary.
+
+---
+
+## 4:30–4:50 — audit + close
+
+Open **Audit Log** or point to the cycle activity preview.
+
+Say:
+
+> "Every major lifecycle transition is appended to a SHA-256 hash-chained audit trail: evidence, AI hypothesis, experiment plan, policy decision, execution, statistics, and rollback. It is application-level tamper evidence, not a blockchain."
+
+Close with:
+
+> "Revenue Autopilot is not a recommendation dashboard. It is a controlled learning loop around an AI growth agent: evidence in, bounded experiment out, deterministic authorization, measurable outcome, memory, and the next safer decision."
+
+---
+
+## Optional 10-second benchmark answer
+
+Use only if the judge asks, "How do you know the strategy is useful?"
+
+Say:
+
+> "A separate frozen synthetic benchmark compares no optimization, random intervention, a rule baseline, and Autopilot over identical paired contexts. Autopilot averaged 59.39% conversion versus 58.18% for no optimization. That is reproducible synthetic evaluation evidence, not a production revenue claim."
+
+Do not spend the main five minutes on the benchmark unless required.
+
+---
+
+## Preserved Task 20 hosted snapshot
+
+The preserved final hosted cycle is useful because it demonstrates that the system does not fabricate success.
+
+Task 20 snapshot:
+
+- terminal trial count: 3
+- hosted results: 3 INCONCLUSIVE
+- current champion: v1 / merchant baseline
+- policy rejections in hosted history: 0
+- promoted treatments: 0
+- audit integrity: valid
+- final experiment: `5277a2df-c1a5-4009-9320-c97c3576ff38`
+- final simulated resource: `demo_plink_0a6348797891d7c8`
+
+Treat these as the **Task 20 verification snapshot**, not timeless live counters.
+
+---
 
 ## Things not to claim
 
-- Do not call `demo_...` resources real Razorpay resources.
-- Do not call synthetic benchmark GMV production revenue or profit.
-- Do not say the LLM chooses authorization or experiment success.
-- Do not say Champion advanced in the hosted demo; it correctly remains v1.
-- Do not claim the Task 20 portfolio selected among multiple live candidates; no untouched candidate existed before rollover, so fresh detection created Cycle 3.
-- Do not say the audit chain is a blockchain.
-- Do not imply the benchmark uses live OpenRouter responses; its diagnosis adapter is deterministic for reproducibility.
-- Do not describe the current 12,258-attempt hosted total as the frozen 6,112-attempt baseline.
+- Do not call a `demo_...` resource a real Razorpay resource.
+- Do not say Test Mode execution has been verified until the credential-gated proof actually PASSes.
+- Do not call synthetic benchmark GMV production revenue, profit, or realized lift.
+- Do not say the LLM authorizes experiments or determines statistical success.
+- Do not say Champion advanced in the hosted snapshot; it correctly remained v1.
+- Do not call an estimated recoverable-GMV opportunity realized revenue.
+- Do not imply uploaded merchants use the TechBazaar causal simulator for experiment outcomes.
+- Do not call the audit chain a blockchain.
+- Do not lead with test count or architecture complexity.
+- Do not describe the frozen 6,112-attempt baseline as the accumulated hosted total.
+
+## Free-tier wake-up fallback
+
+If Render is waking from sleep, refresh a read-only page once and wait. Avoid repeatedly clicking mutation controls while the backend is starting.
