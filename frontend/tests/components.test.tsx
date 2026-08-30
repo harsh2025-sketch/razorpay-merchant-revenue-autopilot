@@ -70,7 +70,7 @@ describe("autopilot status actions", () => {
     expect(screen.getByRole("button", { name: "Deploy Treatment" })).toBeEnabled();
   });
 
-  it("RUNNING shows Run Next Batch", () => {
+  it("RUNNING shows Run Experiment", () => {
     render(
       <AutopilotStatus
         state="RUNNING"
@@ -78,10 +78,10 @@ describe("autopilot status actions", () => {
         latestDecision={null}
       />,
     );
-    expect(screen.getByRole("button", { name: "Run Next Batch" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Run Experiment" })).toBeEnabled();
   });
 
-  it("EVALUATION_PENDING shows Evaluate Results", () => {
+  it("EVALUATION_PENDING shows Run Experiment", () => {
     render(
       <AutopilotStatus
         state="EVALUATION_PENDING"
@@ -90,7 +90,7 @@ describe("autopilot status actions", () => {
       />,
     );
     expect(
-      screen.getByRole("button", { name: "Evaluate Results" }),
+      screen.getByRole("button", { name: "Run Experiment" }),
     ).toBeEnabled();
   });
 
