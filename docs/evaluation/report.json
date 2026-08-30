@@ -1,0 +1,2715 @@
+{
+  "aggregates": [
+    {
+      "mean_absolute_delta": 0.0,
+      "mean_conversion_rate": 0.52376,
+      "mean_gmv_delta_paise": 0.0,
+      "negative_seed_count": 0,
+      "positive_seed_count": 0,
+      "runs": 5,
+      "segment": "android_mid",
+      "strategy": "NO_OPTIMIZATION",
+      "total_gmv_delta_paise": 0
+    },
+    {
+      "mean_absolute_delta": 0.030479999999999997,
+      "mean_conversion_rate": 0.55424,
+      "mean_gmv_delta_paise": 35093560.0,
+      "negative_seed_count": 0,
+      "positive_seed_count": 4,
+      "runs": 5,
+      "segment": "android_mid",
+      "strategy": "RANDOM_INTERVENTION",
+      "total_gmv_delta_paise": 175467800
+    },
+    {
+      "mean_absolute_delta": 0.00411999999999999,
+      "mean_conversion_rate": 0.52788,
+      "mean_gmv_delta_paise": 8053600.0,
+      "negative_seed_count": 1,
+      "positive_seed_count": 4,
+      "runs": 5,
+      "segment": "android_mid",
+      "strategy": "RULE_BASED",
+      "total_gmv_delta_paise": 40268000
+    },
+    {
+      "mean_absolute_delta": 0.00411999999999999,
+      "mean_conversion_rate": 0.52788,
+      "mean_gmv_delta_paise": 8053600.0,
+      "negative_seed_count": 1,
+      "positive_seed_count": 4,
+      "runs": 5,
+      "segment": "android_mid",
+      "strategy": "AUTOPILOT",
+      "total_gmv_delta_paise": 40268000
+    },
+    {
+      "mean_absolute_delta": 0.0,
+      "mean_conversion_rate": 0.48200000000000004,
+      "mean_gmv_delta_paise": 0.0,
+      "negative_seed_count": 0,
+      "positive_seed_count": 0,
+      "runs": 5,
+      "segment": "android_budget",
+      "strategy": "NO_OPTIMIZATION",
+      "total_gmv_delta_paise": 0
+    },
+    {
+      "mean_absolute_delta": -0.0017599999999999949,
+      "mean_conversion_rate": 0.48024000000000006,
+      "mean_gmv_delta_paise": -1560240.0,
+      "negative_seed_count": 1,
+      "positive_seed_count": 1,
+      "runs": 5,
+      "segment": "android_budget",
+      "strategy": "RANDOM_INTERVENTION",
+      "total_gmv_delta_paise": -7801200
+    },
+    {
+      "mean_absolute_delta": 0.0,
+      "mean_conversion_rate": 0.48200000000000004,
+      "mean_gmv_delta_paise": 0.0,
+      "negative_seed_count": 0,
+      "positive_seed_count": 0,
+      "runs": 5,
+      "segment": "android_budget",
+      "strategy": "RULE_BASED",
+      "total_gmv_delta_paise": 0
+    },
+    {
+      "mean_absolute_delta": 0.0,
+      "mean_conversion_rate": 0.48200000000000004,
+      "mean_gmv_delta_paise": 0.0,
+      "negative_seed_count": 0,
+      "positive_seed_count": 0,
+      "runs": 5,
+      "segment": "android_budget",
+      "strategy": "AUTOPILOT",
+      "total_gmv_delta_paise": 0
+    },
+    {
+      "mean_absolute_delta": 0.0,
+      "mean_conversion_rate": 0.497,
+      "mean_gmv_delta_paise": 0.0,
+      "negative_seed_count": 0,
+      "positive_seed_count": 0,
+      "runs": 5,
+      "segment": "web_general",
+      "strategy": "NO_OPTIMIZATION",
+      "total_gmv_delta_paise": 0
+    },
+    {
+      "mean_absolute_delta": 0.007239999999999991,
+      "mean_conversion_rate": 0.50424,
+      "mean_gmv_delta_paise": 17770780.0,
+      "negative_seed_count": 1,
+      "positive_seed_count": 3,
+      "runs": 5,
+      "segment": "web_general",
+      "strategy": "RANDOM_INTERVENTION",
+      "total_gmv_delta_paise": 88853900
+    },
+    {
+      "mean_absolute_delta": 0.0,
+      "mean_conversion_rate": 0.497,
+      "mean_gmv_delta_paise": 0.0,
+      "negative_seed_count": 0,
+      "positive_seed_count": 0,
+      "runs": 5,
+      "segment": "web_general",
+      "strategy": "RULE_BASED",
+      "total_gmv_delta_paise": 0
+    },
+    {
+      "mean_absolute_delta": 8.00000000000134e-05,
+      "mean_conversion_rate": 0.49707999999999997,
+      "mean_gmv_delta_paise": 3361060.0,
+      "negative_seed_count": 3,
+      "positive_seed_count": 2,
+      "runs": 5,
+      "segment": "web_general",
+      "strategy": "AUTOPILOT",
+      "total_gmv_delta_paise": 16805300
+    },
+    {
+      "mean_absolute_delta": 0.0,
+      "mean_conversion_rate": 0.66824,
+      "mean_gmv_delta_paise": 0.0,
+      "negative_seed_count": 0,
+      "positive_seed_count": 0,
+      "runs": 5,
+      "segment": "repeat_buyer",
+      "strategy": "NO_OPTIMIZATION",
+      "total_gmv_delta_paise": 0
+    },
+    {
+      "mean_absolute_delta": 0.025880000000000014,
+      "mean_conversion_rate": 0.6941200000000001,
+      "mean_gmv_delta_paise": 114629640.0,
+      "negative_seed_count": 1,
+      "positive_seed_count": 3,
+      "runs": 5,
+      "segment": "repeat_buyer",
+      "strategy": "RANDOM_INTERVENTION",
+      "total_gmv_delta_paise": 573148200
+    },
+    {
+      "mean_absolute_delta": -0.0021200000000000108,
+      "mean_conversion_rate": 0.66612,
+      "mean_gmv_delta_paise": 5369520.0,
+      "negative_seed_count": 4,
+      "positive_seed_count": 1,
+      "runs": 5,
+      "segment": "repeat_buyer",
+      "strategy": "RULE_BASED",
+      "total_gmv_delta_paise": 26847600
+    },
+    {
+      "mean_absolute_delta": 0.055200000000000006,
+      "mean_conversion_rate": 0.72344,
+      "mean_gmv_delta_paise": 241775480.0,
+      "negative_seed_count": 0,
+      "positive_seed_count": 5,
+      "runs": 5,
+      "segment": "repeat_buyer",
+      "strategy": "AUTOPILOT",
+      "total_gmv_delta_paise": 1208877400
+    },
+    {
+      "mean_absolute_delta": 0.0,
+      "mean_conversion_rate": 0.7378,
+      "mean_gmv_delta_paise": 0.0,
+      "negative_seed_count": 0,
+      "positive_seed_count": 0,
+      "runs": 5,
+      "segment": "ios_premium",
+      "strategy": "NO_OPTIMIZATION",
+      "total_gmv_delta_paise": 0
+    },
+    {
+      "mean_absolute_delta": -0.010680000000000023,
+      "mean_conversion_rate": 0.72712,
+      "mean_gmv_delta_paise": -76381180.0,
+      "negative_seed_count": 3,
+      "positive_seed_count": 1,
+      "runs": 5,
+      "segment": "ios_premium",
+      "strategy": "RANDOM_INTERVENTION",
+      "total_gmv_delta_paise": -381905900
+    },
+    {
+      "mean_absolute_delta": -0.028239999999999998,
+      "mean_conversion_rate": 0.70956,
+      "mean_gmv_delta_paise": -212674160.0,
+      "negative_seed_count": 5,
+      "positive_seed_count": 0,
+      "runs": 5,
+      "segment": "ios_premium",
+      "strategy": "RULE_BASED",
+      "total_gmv_delta_paise": -1063370800
+    },
+    {
+      "mean_absolute_delta": 0.0014000000000000013,
+      "mean_conversion_rate": 0.7392,
+      "mean_gmv_delta_paise": 19707040.0,
+      "negative_seed_count": 1,
+      "positive_seed_count": 4,
+      "runs": 5,
+      "segment": "ios_premium",
+      "strategy": "AUTOPILOT",
+      "total_gmv_delta_paise": 98535200
+    }
+  ],
+  "causal_model_fingerprint": "05642a18eb14a7d4a0ff3beebf892253f3eed68efeea4f25cd56237c64e0750d",
+  "customers_per_segment": 5000,
+  "runs": [
+    {
+      "absolute_conversion_delta_vs_control": 0.0,
+      "attempts": 5000,
+      "captured": 2592,
+      "captured_gmv_delta_vs_control_paise": 0,
+      "captured_gmv_paise": 579875800,
+      "control_captured_gmv_paise": 579875800,
+      "control_conversion_rate": 0.5184,
+      "conversion_rate": 0.5184,
+      "deployed_intervention": null,
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "a0f432f81071718cf8b1c64fdcd1e53643701d59a22358816d451194d5dee4bb",
+      "policy_decision": "N/A",
+      "proposed_intervention": null,
+      "seed": 20260827,
+      "segment": "android_mid",
+      "strategy": "NO_OPTIMIZATION"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.0011999999999999789,
+      "attempts": 5000,
+      "captured": 2598,
+      "captured_gmv_delta_vs_control_paise": 5526400,
+      "captured_gmv_paise": 585402200,
+      "control_captured_gmv_paise": 579875800,
+      "control_conversion_rate": 0.5184,
+      "conversion_rate": 0.5196,
+      "deployed_intervention": {
+        "intervention_type": "expiry_config",
+        "params": {
+          "expiry_hours": 4
+        }
+      },
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "a0f432f81071718cf8b1c64fdcd1e53643701d59a22358816d451194d5dee4bb",
+      "policy_decision": "APPROVE",
+      "proposed_intervention": {
+        "intervention_type": "expiry_config",
+        "params": {
+          "expiry_hours": 4
+        }
+      },
+      "seed": 20260827,
+      "segment": "android_mid",
+      "strategy": "RANDOM_INTERVENTION"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.0011999999999999789,
+      "attempts": 5000,
+      "captured": 2598,
+      "captured_gmv_delta_vs_control_paise": 5526400,
+      "captured_gmv_paise": 585402200,
+      "control_captured_gmv_paise": 579875800,
+      "control_conversion_rate": 0.5184,
+      "conversion_rate": 0.5196,
+      "deployed_intervention": {
+        "intervention_type": "expiry_config",
+        "params": {
+          "expiry_hours": 4
+        }
+      },
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "a0f432f81071718cf8b1c64fdcd1e53643701d59a22358816d451194d5dee4bb",
+      "policy_decision": "APPROVE",
+      "proposed_intervention": {
+        "intervention_type": "expiry_config",
+        "params": {
+          "expiry_hours": 4
+        }
+      },
+      "seed": 20260827,
+      "segment": "android_mid",
+      "strategy": "RULE_BASED"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.0011999999999999789,
+      "attempts": 5000,
+      "captured": 2598,
+      "captured_gmv_delta_vs_control_paise": 5526400,
+      "captured_gmv_paise": 585402200,
+      "control_captured_gmv_paise": 579875800,
+      "control_conversion_rate": 0.5184,
+      "conversion_rate": 0.5196,
+      "deployed_intervention": {
+        "intervention_type": "expiry_config",
+        "params": {
+          "expiry_hours": 4
+        }
+      },
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "a0f432f81071718cf8b1c64fdcd1e53643701d59a22358816d451194d5dee4bb",
+      "policy_decision": "APPROVE",
+      "proposed_intervention": {
+        "intervention_type": "expiry_config",
+        "params": {
+          "expiry_hours": 4
+        }
+      },
+      "seed": 20260827,
+      "segment": "android_mid",
+      "strategy": "AUTOPILOT"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.0,
+      "attempts": 5000,
+      "captured": 2442,
+      "captured_gmv_delta_vs_control_paise": 0,
+      "captured_gmv_paise": 242426600,
+      "control_captured_gmv_paise": 242426600,
+      "control_conversion_rate": 0.4884,
+      "conversion_rate": 0.4884,
+      "deployed_intervention": null,
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "fc0ba031d4917e0203fd7efd67dcb72ac8448fe078855af14316840696c253de",
+      "policy_decision": "N/A",
+      "proposed_intervention": null,
+      "seed": 20260827,
+      "segment": "android_budget",
+      "strategy": "NO_OPTIMIZATION"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.0,
+      "attempts": 5000,
+      "captured": 2442,
+      "captured_gmv_delta_vs_control_paise": 0,
+      "captured_gmv_paise": 242426600,
+      "control_captured_gmv_paise": 242426600,
+      "control_conversion_rate": 0.4884,
+      "conversion_rate": 0.4884,
+      "deployed_intervention": null,
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "fc0ba031d4917e0203fd7efd67dcb72ac8448fe078855af14316840696c253de",
+      "policy_decision": "REJECT",
+      "proposed_intervention": {
+        "intervention_type": "offer_discount",
+        "params": {
+          "discount_pct": 0.05
+        }
+      },
+      "seed": 20260827,
+      "segment": "android_budget",
+      "strategy": "RANDOM_INTERVENTION"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.0,
+      "attempts": 5000,
+      "captured": 2442,
+      "captured_gmv_delta_vs_control_paise": 0,
+      "captured_gmv_paise": 242426600,
+      "control_captured_gmv_paise": 242426600,
+      "control_conversion_rate": 0.4884,
+      "conversion_rate": 0.4884,
+      "deployed_intervention": null,
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "fc0ba031d4917e0203fd7efd67dcb72ac8448fe078855af14316840696c253de",
+      "policy_decision": "REJECT",
+      "proposed_intervention": {
+        "intervention_type": "offer_discount",
+        "params": {
+          "discount_pct": 0.05
+        }
+      },
+      "seed": 20260827,
+      "segment": "android_budget",
+      "strategy": "RULE_BASED"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.0,
+      "attempts": 5000,
+      "captured": 2442,
+      "captured_gmv_delta_vs_control_paise": 0,
+      "captured_gmv_paise": 242426600,
+      "control_captured_gmv_paise": 242426600,
+      "control_conversion_rate": 0.4884,
+      "conversion_rate": 0.4884,
+      "deployed_intervention": null,
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "fc0ba031d4917e0203fd7efd67dcb72ac8448fe078855af14316840696c253de",
+      "policy_decision": "REJECT",
+      "proposed_intervention": {
+        "intervention_type": "offer_discount",
+        "params": {
+          "discount_pct": 0.05
+        }
+      },
+      "seed": 20260827,
+      "segment": "android_budget",
+      "strategy": "AUTOPILOT"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.0,
+      "attempts": 5000,
+      "captured": 2449,
+      "captured_gmv_delta_vs_control_paise": 0,
+      "captured_gmv_paise": 1099387800,
+      "control_captured_gmv_paise": 1099387800,
+      "control_conversion_rate": 0.4898,
+      "conversion_rate": 0.4898,
+      "deployed_intervention": null,
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "32c00a1d457ba57ae828071c3cd85f1ee192418df31dec5ea893083b820e064b",
+      "policy_decision": "N/A",
+      "proposed_intervention": null,
+      "seed": 20260827,
+      "segment": "web_general",
+      "strategy": "NO_OPTIMIZATION"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.013599999999999945,
+      "attempts": 5000,
+      "captured": 2517,
+      "captured_gmv_delta_vs_control_paise": 37789200,
+      "captured_gmv_paise": 1137177000,
+      "control_captured_gmv_paise": 1099387800,
+      "control_conversion_rate": 0.4898,
+      "conversion_rate": 0.5034,
+      "deployed_intervention": {
+        "intervention_type": "payment_method_config",
+        "params": {
+          "card": false,
+          "upi": true
+        }
+      },
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "32c00a1d457ba57ae828071c3cd85f1ee192418df31dec5ea893083b820e064b",
+      "policy_decision": "APPROVE",
+      "proposed_intervention": {
+        "intervention_type": "payment_method_config",
+        "params": {
+          "card": false,
+          "upi": true
+        }
+      },
+      "seed": 20260827,
+      "segment": "web_general",
+      "strategy": "RANDOM_INTERVENTION"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.0,
+      "attempts": 5000,
+      "captured": 2449,
+      "captured_gmv_delta_vs_control_paise": 0,
+      "captured_gmv_paise": 1099387800,
+      "control_captured_gmv_paise": 1099387800,
+      "control_conversion_rate": 0.4898,
+      "conversion_rate": 0.4898,
+      "deployed_intervention": null,
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "32c00a1d457ba57ae828071c3cd85f1ee192418df31dec5ea893083b820e064b",
+      "policy_decision": "REJECT",
+      "proposed_intervention": {
+        "intervention_type": "offer_discount",
+        "params": {
+          "discount_pct": 0.05
+        }
+      },
+      "seed": 20260827,
+      "segment": "web_general",
+      "strategy": "RULE_BASED"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.008000000000000007,
+      "attempts": 5000,
+      "captured": 2489,
+      "captured_gmv_delta_vs_control_paise": 21314900,
+      "captured_gmv_paise": 1120702700,
+      "control_captured_gmv_paise": 1099387800,
+      "control_conversion_rate": 0.4898,
+      "conversion_rate": 0.4978,
+      "deployed_intervention": {
+        "intervention_type": "expiry_config",
+        "params": {
+          "expiry_hours": 4
+        }
+      },
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "32c00a1d457ba57ae828071c3cd85f1ee192418df31dec5ea893083b820e064b",
+      "policy_decision": "APPROVE",
+      "proposed_intervention": {
+        "intervention_type": "expiry_config",
+        "params": {
+          "expiry_hours": 4
+        }
+      },
+      "seed": 20260827,
+      "segment": "web_general",
+      "strategy": "AUTOPILOT"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.0,
+      "attempts": 5000,
+      "captured": 3260,
+      "captured_gmv_delta_vs_control_paise": 0,
+      "captured_gmv_paise": 2286485300,
+      "control_captured_gmv_paise": 2286485300,
+      "control_conversion_rate": 0.652,
+      "conversion_rate": 0.652,
+      "deployed_intervention": null,
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "a068bfa68d729425782c5c092ed3b505907048c21d063052dea3289be995d026",
+      "policy_decision": "N/A",
+      "proposed_intervention": null,
+      "seed": 20260827,
+      "segment": "repeat_buyer",
+      "strategy": "NO_OPTIMIZATION"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.08519999999999994,
+      "attempts": 5000,
+      "captured": 3686,
+      "captured_gmv_delta_vs_control_paise": 342100600,
+      "captured_gmv_paise": 2628585900,
+      "control_captured_gmv_paise": 2286485300,
+      "control_conversion_rate": 0.652,
+      "conversion_rate": 0.7372,
+      "deployed_intervention": {
+        "intervention_type": "partial_payment",
+        "params": {
+          "accept_partial": true,
+          "first_min_partial_amount_pct": 0.25
+        }
+      },
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "a068bfa68d729425782c5c092ed3b505907048c21d063052dea3289be995d026",
+      "policy_decision": "APPROVE",
+      "proposed_intervention": {
+        "intervention_type": "partial_payment",
+        "params": {
+          "accept_partial": true,
+          "first_min_partial_amount_pct": 0.25
+        }
+      },
+      "seed": 20260827,
+      "segment": "repeat_buyer",
+      "strategy": "RANDOM_INTERVENTION"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.02279999999999993,
+      "attempts": 5000,
+      "captured": 3374,
+      "captured_gmv_delta_vs_control_paise": 89719000,
+      "captured_gmv_paise": 2376204300,
+      "control_captured_gmv_paise": 2286485300,
+      "control_conversion_rate": 0.652,
+      "conversion_rate": 0.6748,
+      "deployed_intervention": {
+        "intervention_type": "expiry_config",
+        "params": {
+          "expiry_hours": 4
+        }
+      },
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "a068bfa68d729425782c5c092ed3b505907048c21d063052dea3289be995d026",
+      "policy_decision": "APPROVE",
+      "proposed_intervention": {
+        "intervention_type": "expiry_config",
+        "params": {
+          "expiry_hours": 4
+        }
+      },
+      "seed": 20260827,
+      "segment": "repeat_buyer",
+      "strategy": "RULE_BASED"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.08519999999999994,
+      "attempts": 5000,
+      "captured": 3686,
+      "captured_gmv_delta_vs_control_paise": 342100600,
+      "captured_gmv_paise": 2628585900,
+      "control_captured_gmv_paise": 2286485300,
+      "control_conversion_rate": 0.652,
+      "conversion_rate": 0.7372,
+      "deployed_intervention": {
+        "intervention_type": "partial_payment",
+        "params": {
+          "accept_partial": true,
+          "first_min_partial_amount_pct": 0.25
+        }
+      },
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "a068bfa68d729425782c5c092ed3b505907048c21d063052dea3289be995d026",
+      "policy_decision": "APPROVE",
+      "proposed_intervention": {
+        "intervention_type": "partial_payment",
+        "params": {
+          "accept_partial": true,
+          "first_min_partial_amount_pct": 0.25
+        }
+      },
+      "seed": 20260827,
+      "segment": "repeat_buyer",
+      "strategy": "AUTOPILOT"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.0,
+      "attempts": 5000,
+      "captured": 3729,
+      "captured_gmv_delta_vs_control_paise": 0,
+      "captured_gmv_paise": 5633831700,
+      "control_captured_gmv_paise": 5633831700,
+      "control_conversion_rate": 0.7458,
+      "conversion_rate": 0.7458,
+      "deployed_intervention": null,
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "e2054caa116f6a5cb3fb07ceeedfd26e29b1cb5672164727d58f974e5ed9c551",
+      "policy_decision": "N/A",
+      "proposed_intervention": null,
+      "seed": 20260827,
+      "segment": "ios_premium",
+      "strategy": "NO_OPTIMIZATION"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.006599999999999939,
+      "attempts": 5000,
+      "captured": 3762,
+      "captured_gmv_delta_vs_control_paise": 45637900,
+      "captured_gmv_paise": 5679469600,
+      "control_captured_gmv_paise": 5633831700,
+      "control_conversion_rate": 0.7458,
+      "conversion_rate": 0.7524,
+      "deployed_intervention": {
+        "intervention_type": "payment_method_config",
+        "params": {
+          "card": false,
+          "upi": true
+        }
+      },
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "e2054caa116f6a5cb3fb07ceeedfd26e29b1cb5672164727d58f974e5ed9c551",
+      "policy_decision": "APPROVE",
+      "proposed_intervention": {
+        "intervention_type": "payment_method_config",
+        "params": {
+          "card": false,
+          "upi": true
+        }
+      },
+      "seed": 20260827,
+      "segment": "ios_premium",
+      "strategy": "RANDOM_INTERVENTION"
+    },
+    {
+      "absolute_conversion_delta_vs_control": -0.036800000000000055,
+      "attempts": 5000,
+      "captured": 3545,
+      "captured_gmv_delta_vs_control_paise": -289027100,
+      "captured_gmv_paise": 5344804600,
+      "control_captured_gmv_paise": 5633831700,
+      "control_conversion_rate": 0.7458,
+      "conversion_rate": 0.709,
+      "deployed_intervention": {
+        "intervention_type": "expiry_config",
+        "params": {
+          "expiry_hours": 4
+        }
+      },
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "e2054caa116f6a5cb3fb07ceeedfd26e29b1cb5672164727d58f974e5ed9c551",
+      "policy_decision": "APPROVE",
+      "proposed_intervention": {
+        "intervention_type": "expiry_config",
+        "params": {
+          "expiry_hours": 4
+        }
+      },
+      "seed": 20260827,
+      "segment": "ios_premium",
+      "strategy": "RULE_BASED"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.006599999999999939,
+      "attempts": 5000,
+      "captured": 3762,
+      "captured_gmv_delta_vs_control_paise": 38595200,
+      "captured_gmv_paise": 5672426900,
+      "control_captured_gmv_paise": 5633831700,
+      "control_conversion_rate": 0.7458,
+      "conversion_rate": 0.7524,
+      "deployed_intervention": {
+        "intervention_type": "partial_payment",
+        "params": {
+          "accept_partial": true,
+          "first_min_partial_amount_pct": 0.25
+        }
+      },
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "e2054caa116f6a5cb3fb07ceeedfd26e29b1cb5672164727d58f974e5ed9c551",
+      "policy_decision": "APPROVE",
+      "proposed_intervention": {
+        "intervention_type": "partial_payment",
+        "params": {
+          "accept_partial": true,
+          "first_min_partial_amount_pct": 0.25
+        }
+      },
+      "seed": 20260827,
+      "segment": "ios_premium",
+      "strategy": "AUTOPILOT"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.0,
+      "attempts": 5000,
+      "captured": 2602,
+      "captured_gmv_delta_vs_control_paise": 0,
+      "captured_gmv_paise": 581615700,
+      "control_captured_gmv_paise": 581615700,
+      "control_conversion_rate": 0.5204,
+      "conversion_rate": 0.5204,
+      "deployed_intervention": null,
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "0c29511d83414e74279eab1c46abe3595acf194aea84165ce24408851ead8a18",
+      "policy_decision": "N/A",
+      "proposed_intervention": null,
+      "seed": 20260828,
+      "segment": "android_mid",
+      "strategy": "NO_OPTIMIZATION"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.009600000000000053,
+      "attempts": 5000,
+      "captured": 2650,
+      "captured_gmv_delta_vs_control_paise": 10773500,
+      "captured_gmv_paise": 592389200,
+      "control_captured_gmv_paise": 581615700,
+      "control_conversion_rate": 0.5204,
+      "conversion_rate": 0.53,
+      "deployed_intervention": {
+        "intervention_type": "expiry_config",
+        "params": {
+          "expiry_hours": 4
+        }
+      },
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "0c29511d83414e74279eab1c46abe3595acf194aea84165ce24408851ead8a18",
+      "policy_decision": "APPROVE",
+      "proposed_intervention": {
+        "intervention_type": "expiry_config",
+        "params": {
+          "expiry_hours": 4
+        }
+      },
+      "seed": 20260828,
+      "segment": "android_mid",
+      "strategy": "RANDOM_INTERVENTION"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.009600000000000053,
+      "attempts": 5000,
+      "captured": 2650,
+      "captured_gmv_delta_vs_control_paise": 10773500,
+      "captured_gmv_paise": 592389200,
+      "control_captured_gmv_paise": 581615700,
+      "control_conversion_rate": 0.5204,
+      "conversion_rate": 0.53,
+      "deployed_intervention": {
+        "intervention_type": "expiry_config",
+        "params": {
+          "expiry_hours": 4
+        }
+      },
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "0c29511d83414e74279eab1c46abe3595acf194aea84165ce24408851ead8a18",
+      "policy_decision": "APPROVE",
+      "proposed_intervention": {
+        "intervention_type": "expiry_config",
+        "params": {
+          "expiry_hours": 4
+        }
+      },
+      "seed": 20260828,
+      "segment": "android_mid",
+      "strategy": "RULE_BASED"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.009600000000000053,
+      "attempts": 5000,
+      "captured": 2650,
+      "captured_gmv_delta_vs_control_paise": 10773500,
+      "captured_gmv_paise": 592389200,
+      "control_captured_gmv_paise": 581615700,
+      "control_conversion_rate": 0.5204,
+      "conversion_rate": 0.53,
+      "deployed_intervention": {
+        "intervention_type": "expiry_config",
+        "params": {
+          "expiry_hours": 4
+        }
+      },
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "0c29511d83414e74279eab1c46abe3595acf194aea84165ce24408851ead8a18",
+      "policy_decision": "APPROVE",
+      "proposed_intervention": {
+        "intervention_type": "expiry_config",
+        "params": {
+          "expiry_hours": 4
+        }
+      },
+      "seed": 20260828,
+      "segment": "android_mid",
+      "strategy": "AUTOPILOT"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.0,
+      "attempts": 5000,
+      "captured": 2366,
+      "captured_gmv_delta_vs_control_paise": 0,
+      "captured_gmv_paise": 236340700,
+      "control_captured_gmv_paise": 236340700,
+      "control_conversion_rate": 0.4732,
+      "conversion_rate": 0.4732,
+      "deployed_intervention": null,
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "668832eee76892418b9d94198710c2d3ca2523b770142dd45829d7f426109589",
+      "policy_decision": "N/A",
+      "proposed_intervention": null,
+      "seed": 20260828,
+      "segment": "android_budget",
+      "strategy": "NO_OPTIMIZATION"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.0024000000000000132,
+      "attempts": 5000,
+      "captured": 2378,
+      "captured_gmv_delta_vs_control_paise": -200,
+      "captured_gmv_paise": 236340500,
+      "control_captured_gmv_paise": 236340700,
+      "control_conversion_rate": 0.4732,
+      "conversion_rate": 0.4756,
+      "deployed_intervention": {
+        "intervention_type": "payment_method_config",
+        "params": {
+          "card": false,
+          "upi": true
+        }
+      },
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "668832eee76892418b9d94198710c2d3ca2523b770142dd45829d7f426109589",
+      "policy_decision": "APPROVE",
+      "proposed_intervention": {
+        "intervention_type": "payment_method_config",
+        "params": {
+          "card": false,
+          "upi": true
+        }
+      },
+      "seed": 20260828,
+      "segment": "android_budget",
+      "strategy": "RANDOM_INTERVENTION"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.0,
+      "attempts": 5000,
+      "captured": 2366,
+      "captured_gmv_delta_vs_control_paise": 0,
+      "captured_gmv_paise": 236340700,
+      "control_captured_gmv_paise": 236340700,
+      "control_conversion_rate": 0.4732,
+      "conversion_rate": 0.4732,
+      "deployed_intervention": null,
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "668832eee76892418b9d94198710c2d3ca2523b770142dd45829d7f426109589",
+      "policy_decision": "REJECT",
+      "proposed_intervention": {
+        "intervention_type": "offer_discount",
+        "params": {
+          "discount_pct": 0.05
+        }
+      },
+      "seed": 20260828,
+      "segment": "android_budget",
+      "strategy": "RULE_BASED"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.0,
+      "attempts": 5000,
+      "captured": 2366,
+      "captured_gmv_delta_vs_control_paise": 0,
+      "captured_gmv_paise": 236340700,
+      "control_captured_gmv_paise": 236340700,
+      "control_conversion_rate": 0.4732,
+      "conversion_rate": 0.4732,
+      "deployed_intervention": null,
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "668832eee76892418b9d94198710c2d3ca2523b770142dd45829d7f426109589",
+      "policy_decision": "REJECT",
+      "proposed_intervention": {
+        "intervention_type": "offer_discount",
+        "params": {
+          "discount_pct": 0.05
+        }
+      },
+      "seed": 20260828,
+      "segment": "android_budget",
+      "strategy": "AUTOPILOT"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.0,
+      "attempts": 5000,
+      "captured": 2532,
+      "captured_gmv_delta_vs_control_paise": 0,
+      "captured_gmv_paise": 1150478700,
+      "control_captured_gmv_paise": 1150478700,
+      "control_conversion_rate": 0.5064,
+      "conversion_rate": 0.5064,
+      "deployed_intervention": null,
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "78a26405c0e8fca1ddc5cccc04c664d5b84afd81b7b7296ebe1f1674072692d7",
+      "policy_decision": "N/A",
+      "proposed_intervention": null,
+      "seed": 20260828,
+      "segment": "web_general",
+      "strategy": "NO_OPTIMIZATION"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.0,
+      "attempts": 5000,
+      "captured": 2532,
+      "captured_gmv_delta_vs_control_paise": 0,
+      "captured_gmv_paise": 1150478700,
+      "control_captured_gmv_paise": 1150478700,
+      "control_conversion_rate": 0.5064,
+      "conversion_rate": 0.5064,
+      "deployed_intervention": null,
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "78a26405c0e8fca1ddc5cccc04c664d5b84afd81b7b7296ebe1f1674072692d7",
+      "policy_decision": "REJECT",
+      "proposed_intervention": {
+        "intervention_type": "offer_discount",
+        "params": {
+          "discount_pct": 0.05
+        }
+      },
+      "seed": 20260828,
+      "segment": "web_general",
+      "strategy": "RANDOM_INTERVENTION"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.0,
+      "attempts": 5000,
+      "captured": 2532,
+      "captured_gmv_delta_vs_control_paise": 0,
+      "captured_gmv_paise": 1150478700,
+      "control_captured_gmv_paise": 1150478700,
+      "control_conversion_rate": 0.5064,
+      "conversion_rate": 0.5064,
+      "deployed_intervention": null,
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "78a26405c0e8fca1ddc5cccc04c664d5b84afd81b7b7296ebe1f1674072692d7",
+      "policy_decision": "REJECT",
+      "proposed_intervention": {
+        "intervention_type": "offer_discount",
+        "params": {
+          "discount_pct": 0.05
+        }
+      },
+      "seed": 20260828,
+      "segment": "web_general",
+      "strategy": "RULE_BASED"
+    },
+    {
+      "absolute_conversion_delta_vs_control": -0.010399999999999965,
+      "attempts": 5000,
+      "captured": 2480,
+      "captured_gmv_delta_vs_control_paise": -23658500,
+      "captured_gmv_paise": 1126820200,
+      "control_captured_gmv_paise": 1150478700,
+      "control_conversion_rate": 0.5064,
+      "conversion_rate": 0.496,
+      "deployed_intervention": {
+        "intervention_type": "expiry_config",
+        "params": {
+          "expiry_hours": 4
+        }
+      },
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "78a26405c0e8fca1ddc5cccc04c664d5b84afd81b7b7296ebe1f1674072692d7",
+      "policy_decision": "APPROVE",
+      "proposed_intervention": {
+        "intervention_type": "expiry_config",
+        "params": {
+          "expiry_hours": 4
+        }
+      },
+      "seed": 20260828,
+      "segment": "web_general",
+      "strategy": "AUTOPILOT"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.0,
+      "attempts": 5000,
+      "captured": 3339,
+      "captured_gmv_delta_vs_control_paise": 0,
+      "captured_gmv_paise": 2329069300,
+      "control_captured_gmv_paise": 2329069300,
+      "control_conversion_rate": 0.6678,
+      "conversion_rate": 0.6678,
+      "deployed_intervention": null,
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "41e403486a8b11c123ba26f34640150fb03c8214a146b5581687635c54970ba3",
+      "policy_decision": "N/A",
+      "proposed_intervention": null,
+      "seed": 20260828,
+      "segment": "repeat_buyer",
+      "strategy": "NO_OPTIMIZATION"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.0024000000000000687,
+      "attempts": 5000,
+      "captured": 3351,
+      "captured_gmv_delta_vs_control_paise": 16606400,
+      "captured_gmv_paise": 2345675700,
+      "control_captured_gmv_paise": 2329069300,
+      "control_conversion_rate": 0.6678,
+      "conversion_rate": 0.6702,
+      "deployed_intervention": {
+        "intervention_type": "payment_method_config",
+        "params": {
+          "card": false,
+          "upi": true
+        }
+      },
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "41e403486a8b11c123ba26f34640150fb03c8214a146b5581687635c54970ba3",
+      "policy_decision": "APPROVE",
+      "proposed_intervention": {
+        "intervention_type": "payment_method_config",
+        "params": {
+          "card": false,
+          "upi": true
+        }
+      },
+      "seed": 20260828,
+      "segment": "repeat_buyer",
+      "strategy": "RANDOM_INTERVENTION"
+    },
+    {
+      "absolute_conversion_delta_vs_control": -0.0015999999999999348,
+      "attempts": 5000,
+      "captured": 3331,
+      "captured_gmv_delta_vs_control_paise": 13506700,
+      "captured_gmv_paise": 2342576000,
+      "control_captured_gmv_paise": 2329069300,
+      "control_conversion_rate": 0.6678,
+      "conversion_rate": 0.6662,
+      "deployed_intervention": {
+        "intervention_type": "expiry_config",
+        "params": {
+          "expiry_hours": 4
+        }
+      },
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "41e403486a8b11c123ba26f34640150fb03c8214a146b5581687635c54970ba3",
+      "policy_decision": "APPROVE",
+      "proposed_intervention": {
+        "intervention_type": "expiry_config",
+        "params": {
+          "expiry_hours": 4
+        }
+      },
+      "seed": 20260828,
+      "segment": "repeat_buyer",
+      "strategy": "RULE_BASED"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.050000000000000044,
+      "attempts": 5000,
+      "captured": 3589,
+      "captured_gmv_delta_vs_control_paise": 242623400,
+      "captured_gmv_paise": 2571692700,
+      "control_captured_gmv_paise": 2329069300,
+      "control_conversion_rate": 0.6678,
+      "conversion_rate": 0.7178,
+      "deployed_intervention": {
+        "intervention_type": "partial_payment",
+        "params": {
+          "accept_partial": true,
+          "first_min_partial_amount_pct": 0.25
+        }
+      },
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "41e403486a8b11c123ba26f34640150fb03c8214a146b5581687635c54970ba3",
+      "policy_decision": "APPROVE",
+      "proposed_intervention": {
+        "intervention_type": "partial_payment",
+        "params": {
+          "accept_partial": true,
+          "first_min_partial_amount_pct": 0.25
+        }
+      },
+      "seed": 20260828,
+      "segment": "repeat_buyer",
+      "strategy": "AUTOPILOT"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.0,
+      "attempts": 5000,
+      "captured": 3655,
+      "captured_gmv_delta_vs_control_paise": 0,
+      "captured_gmv_paise": 5446668000,
+      "control_captured_gmv_paise": 5446668000,
+      "control_conversion_rate": 0.731,
+      "conversion_rate": 0.731,
+      "deployed_intervention": null,
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "5891aebfe2406386453f7557ba3effeddaa1895af114802ab6d6859dfdfaf280",
+      "policy_decision": "N/A",
+      "proposed_intervention": null,
+      "seed": 20260828,
+      "segment": "ios_premium",
+      "strategy": "NO_OPTIMIZATION"
+    },
+    {
+      "absolute_conversion_delta_vs_control": -0.019199999999999995,
+      "attempts": 5000,
+      "captured": 3559,
+      "captured_gmv_delta_vs_control_paise": -154957000,
+      "captured_gmv_paise": 5291711000,
+      "control_captured_gmv_paise": 5446668000,
+      "control_conversion_rate": 0.731,
+      "conversion_rate": 0.7118,
+      "deployed_intervention": {
+        "intervention_type": "expiry_config",
+        "params": {
+          "expiry_hours": 4
+        }
+      },
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "5891aebfe2406386453f7557ba3effeddaa1895af114802ab6d6859dfdfaf280",
+      "policy_decision": "APPROVE",
+      "proposed_intervention": {
+        "intervention_type": "expiry_config",
+        "params": {
+          "expiry_hours": 4
+        }
+      },
+      "seed": 20260828,
+      "segment": "ios_premium",
+      "strategy": "RANDOM_INTERVENTION"
+    },
+    {
+      "absolute_conversion_delta_vs_control": -0.019199999999999995,
+      "attempts": 5000,
+      "captured": 3559,
+      "captured_gmv_delta_vs_control_paise": -154957000,
+      "captured_gmv_paise": 5291711000,
+      "control_captured_gmv_paise": 5446668000,
+      "control_conversion_rate": 0.731,
+      "conversion_rate": 0.7118,
+      "deployed_intervention": {
+        "intervention_type": "expiry_config",
+        "params": {
+          "expiry_hours": 4
+        }
+      },
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "5891aebfe2406386453f7557ba3effeddaa1895af114802ab6d6859dfdfaf280",
+      "policy_decision": "APPROVE",
+      "proposed_intervention": {
+        "intervention_type": "expiry_config",
+        "params": {
+          "expiry_hours": 4
+        }
+      },
+      "seed": 20260828,
+      "segment": "ios_premium",
+      "strategy": "RULE_BASED"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.0034000000000000696,
+      "attempts": 5000,
+      "captured": 3672,
+      "captured_gmv_delta_vs_control_paise": 49525100,
+      "captured_gmv_paise": 5496193100,
+      "control_captured_gmv_paise": 5446668000,
+      "control_conversion_rate": 0.731,
+      "conversion_rate": 0.7344,
+      "deployed_intervention": {
+        "intervention_type": "partial_payment",
+        "params": {
+          "accept_partial": true,
+          "first_min_partial_amount_pct": 0.25
+        }
+      },
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "5891aebfe2406386453f7557ba3effeddaa1895af114802ab6d6859dfdfaf280",
+      "policy_decision": "APPROVE",
+      "proposed_intervention": {
+        "intervention_type": "partial_payment",
+        "params": {
+          "accept_partial": true,
+          "first_min_partial_amount_pct": 0.25
+        }
+      },
+      "seed": 20260828,
+      "segment": "ios_premium",
+      "strategy": "AUTOPILOT"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.0,
+      "attempts": 5000,
+      "captured": 2601,
+      "captured_gmv_delta_vs_control_paise": 0,
+      "captured_gmv_paise": 579073400,
+      "control_captured_gmv_paise": 579073400,
+      "control_conversion_rate": 0.5202,
+      "conversion_rate": 0.5202,
+      "deployed_intervention": null,
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "1a24cd0ce67de844440463789e09a17a42a85750bbaa9779a91987ce96683124",
+      "policy_decision": "N/A",
+      "proposed_intervention": null,
+      "seed": 20260829,
+      "segment": "android_mid",
+      "strategy": "NO_OPTIMIZATION"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.014000000000000012,
+      "attempts": 5000,
+      "captured": 2671,
+      "captured_gmv_delta_vs_control_paise": 17393900,
+      "captured_gmv_paise": 596467300,
+      "control_captured_gmv_paise": 579073400,
+      "control_conversion_rate": 0.5202,
+      "conversion_rate": 0.5342,
+      "deployed_intervention": {
+        "intervention_type": "partial_payment",
+        "params": {
+          "accept_partial": true,
+          "first_min_partial_amount_pct": 0.25
+        }
+      },
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "1a24cd0ce67de844440463789e09a17a42a85750bbaa9779a91987ce96683124",
+      "policy_decision": "APPROVE",
+      "proposed_intervention": {
+        "intervention_type": "partial_payment",
+        "params": {
+          "accept_partial": true,
+          "first_min_partial_amount_pct": 0.25
+        }
+      },
+      "seed": 20260829,
+      "segment": "android_mid",
+      "strategy": "RANDOM_INTERVENTION"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.01880000000000004,
+      "attempts": 5000,
+      "captured": 2695,
+      "captured_gmv_delta_vs_control_paise": 26456200,
+      "captured_gmv_paise": 605529600,
+      "control_captured_gmv_paise": 579073400,
+      "control_conversion_rate": 0.5202,
+      "conversion_rate": 0.539,
+      "deployed_intervention": {
+        "intervention_type": "expiry_config",
+        "params": {
+          "expiry_hours": 4
+        }
+      },
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "1a24cd0ce67de844440463789e09a17a42a85750bbaa9779a91987ce96683124",
+      "policy_decision": "APPROVE",
+      "proposed_intervention": {
+        "intervention_type": "expiry_config",
+        "params": {
+          "expiry_hours": 4
+        }
+      },
+      "seed": 20260829,
+      "segment": "android_mid",
+      "strategy": "RULE_BASED"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.01880000000000004,
+      "attempts": 5000,
+      "captured": 2695,
+      "captured_gmv_delta_vs_control_paise": 26456200,
+      "captured_gmv_paise": 605529600,
+      "control_captured_gmv_paise": 579073400,
+      "control_conversion_rate": 0.5202,
+      "conversion_rate": 0.539,
+      "deployed_intervention": {
+        "intervention_type": "expiry_config",
+        "params": {
+          "expiry_hours": 4
+        }
+      },
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "1a24cd0ce67de844440463789e09a17a42a85750bbaa9779a91987ce96683124",
+      "policy_decision": "APPROVE",
+      "proposed_intervention": {
+        "intervention_type": "expiry_config",
+        "params": {
+          "expiry_hours": 4
+        }
+      },
+      "seed": 20260829,
+      "segment": "android_mid",
+      "strategy": "AUTOPILOT"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.0,
+      "attempts": 5000,
+      "captured": 2438,
+      "captured_gmv_delta_vs_control_paise": 0,
+      "captured_gmv_paise": 245374000,
+      "control_captured_gmv_paise": 245374000,
+      "control_conversion_rate": 0.4876,
+      "conversion_rate": 0.4876,
+      "deployed_intervention": null,
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "68b1d8bba5f74284ee45c73aef010aea6f58bc2e798ddd724c410ef149643c0b",
+      "policy_decision": "N/A",
+      "proposed_intervention": null,
+      "seed": 20260829,
+      "segment": "android_budget",
+      "strategy": "NO_OPTIMIZATION"
+    },
+    {
+      "absolute_conversion_delta_vs_control": -0.011199999999999988,
+      "attempts": 5000,
+      "captured": 2382,
+      "captured_gmv_delta_vs_control_paise": -7801000,
+      "captured_gmv_paise": 237573000,
+      "control_captured_gmv_paise": 245374000,
+      "control_conversion_rate": 0.4876,
+      "conversion_rate": 0.4764,
+      "deployed_intervention": {
+        "intervention_type": "expiry_config",
+        "params": {
+          "expiry_hours": 4
+        }
+      },
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "68b1d8bba5f74284ee45c73aef010aea6f58bc2e798ddd724c410ef149643c0b",
+      "policy_decision": "APPROVE",
+      "proposed_intervention": {
+        "intervention_type": "expiry_config",
+        "params": {
+          "expiry_hours": 4
+        }
+      },
+      "seed": 20260829,
+      "segment": "android_budget",
+      "strategy": "RANDOM_INTERVENTION"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.0,
+      "attempts": 5000,
+      "captured": 2438,
+      "captured_gmv_delta_vs_control_paise": 0,
+      "captured_gmv_paise": 245374000,
+      "control_captured_gmv_paise": 245374000,
+      "control_conversion_rate": 0.4876,
+      "conversion_rate": 0.4876,
+      "deployed_intervention": null,
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "68b1d8bba5f74284ee45c73aef010aea6f58bc2e798ddd724c410ef149643c0b",
+      "policy_decision": "REJECT",
+      "proposed_intervention": {
+        "intervention_type": "offer_discount",
+        "params": {
+          "discount_pct": 0.05
+        }
+      },
+      "seed": 20260829,
+      "segment": "android_budget",
+      "strategy": "RULE_BASED"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.0,
+      "attempts": 5000,
+      "captured": 2438,
+      "captured_gmv_delta_vs_control_paise": 0,
+      "captured_gmv_paise": 245374000,
+      "control_captured_gmv_paise": 245374000,
+      "control_conversion_rate": 0.4876,
+      "conversion_rate": 0.4876,
+      "deployed_intervention": null,
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "68b1d8bba5f74284ee45c73aef010aea6f58bc2e798ddd724c410ef149643c0b",
+      "policy_decision": "REJECT",
+      "proposed_intervention": {
+        "intervention_type": "offer_discount",
+        "params": {
+          "discount_pct": 0.05
+        }
+      },
+      "seed": 20260829,
+      "segment": "android_budget",
+      "strategy": "AUTOPILOT"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.0,
+      "attempts": 5000,
+      "captured": 2493,
+      "captured_gmv_delta_vs_control_paise": 0,
+      "captured_gmv_paise": 1109593800,
+      "control_captured_gmv_paise": 1109593800,
+      "control_conversion_rate": 0.4986,
+      "conversion_rate": 0.4986,
+      "deployed_intervention": null,
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "9b47413cfa9e1fb7bea92b48f615c0fbdc3aeeabea127b5e02e95eaf6fd07fc6",
+      "policy_decision": "N/A",
+      "proposed_intervention": null,
+      "seed": 20260829,
+      "segment": "web_general",
+      "strategy": "NO_OPTIMIZATION"
+    },
+    {
+      "absolute_conversion_delta_vs_control": -0.004799999999999971,
+      "attempts": 5000,
+      "captured": 2469,
+      "captured_gmv_delta_vs_control_paise": 4269900,
+      "captured_gmv_paise": 1113863700,
+      "control_captured_gmv_paise": 1109593800,
+      "control_conversion_rate": 0.4986,
+      "conversion_rate": 0.4938,
+      "deployed_intervention": {
+        "intervention_type": "expiry_config",
+        "params": {
+          "expiry_hours": 4
+        }
+      },
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "9b47413cfa9e1fb7bea92b48f615c0fbdc3aeeabea127b5e02e95eaf6fd07fc6",
+      "policy_decision": "APPROVE",
+      "proposed_intervention": {
+        "intervention_type": "expiry_config",
+        "params": {
+          "expiry_hours": 4
+        }
+      },
+      "seed": 20260829,
+      "segment": "web_general",
+      "strategy": "RANDOM_INTERVENTION"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.0,
+      "attempts": 5000,
+      "captured": 2493,
+      "captured_gmv_delta_vs_control_paise": 0,
+      "captured_gmv_paise": 1109593800,
+      "control_captured_gmv_paise": 1109593800,
+      "control_conversion_rate": 0.4986,
+      "conversion_rate": 0.4986,
+      "deployed_intervention": null,
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "9b47413cfa9e1fb7bea92b48f615c0fbdc3aeeabea127b5e02e95eaf6fd07fc6",
+      "policy_decision": "REJECT",
+      "proposed_intervention": {
+        "intervention_type": "offer_discount",
+        "params": {
+          "discount_pct": 0.05
+        }
+      },
+      "seed": 20260829,
+      "segment": "web_general",
+      "strategy": "RULE_BASED"
+    },
+    {
+      "absolute_conversion_delta_vs_control": -0.004799999999999971,
+      "attempts": 5000,
+      "captured": 2469,
+      "captured_gmv_delta_vs_control_paise": 4269900,
+      "captured_gmv_paise": 1113863700,
+      "control_captured_gmv_paise": 1109593800,
+      "control_conversion_rate": 0.4986,
+      "conversion_rate": 0.4938,
+      "deployed_intervention": {
+        "intervention_type": "expiry_config",
+        "params": {
+          "expiry_hours": 4
+        }
+      },
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "9b47413cfa9e1fb7bea92b48f615c0fbdc3aeeabea127b5e02e95eaf6fd07fc6",
+      "policy_decision": "APPROVE",
+      "proposed_intervention": {
+        "intervention_type": "expiry_config",
+        "params": {
+          "expiry_hours": 4
+        }
+      },
+      "seed": 20260829,
+      "segment": "web_general",
+      "strategy": "AUTOPILOT"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.0,
+      "attempts": 5000,
+      "captured": 3358,
+      "captured_gmv_delta_vs_control_paise": 0,
+      "captured_gmv_paise": 2340083000,
+      "control_captured_gmv_paise": 2340083000,
+      "control_conversion_rate": 0.6716,
+      "conversion_rate": 0.6716,
+      "deployed_intervention": null,
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "965f02075d7a00040cb1a308508db5a4be5be39089345147a97f893766ea4c4c",
+      "policy_decision": "N/A",
+      "proposed_intervention": null,
+      "seed": 20260829,
+      "segment": "repeat_buyer",
+      "strategy": "NO_OPTIMIZATION"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.05520000000000003,
+      "attempts": 5000,
+      "captured": 3634,
+      "captured_gmv_delta_vs_control_paise": 236213300,
+      "captured_gmv_paise": 2576296300,
+      "control_captured_gmv_paise": 2340083000,
+      "control_conversion_rate": 0.6716,
+      "conversion_rate": 0.7268,
+      "deployed_intervention": {
+        "intervention_type": "partial_payment",
+        "params": {
+          "accept_partial": true,
+          "first_min_partial_amount_pct": 0.25
+        }
+      },
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "965f02075d7a00040cb1a308508db5a4be5be39089345147a97f893766ea4c4c",
+      "policy_decision": "APPROVE",
+      "proposed_intervention": {
+        "intervention_type": "partial_payment",
+        "params": {
+          "accept_partial": true,
+          "first_min_partial_amount_pct": 0.25
+        }
+      },
+      "seed": 20260829,
+      "segment": "repeat_buyer",
+      "strategy": "RANDOM_INTERVENTION"
+    },
+    {
+      "absolute_conversion_delta_vs_control": -0.007800000000000029,
+      "attempts": 5000,
+      "captured": 3319,
+      "captured_gmv_delta_vs_control_paise": -30888300,
+      "captured_gmv_paise": 2309194700,
+      "control_captured_gmv_paise": 2340083000,
+      "control_conversion_rate": 0.6716,
+      "conversion_rate": 0.6638,
+      "deployed_intervention": {
+        "intervention_type": "expiry_config",
+        "params": {
+          "expiry_hours": 4
+        }
+      },
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "965f02075d7a00040cb1a308508db5a4be5be39089345147a97f893766ea4c4c",
+      "policy_decision": "APPROVE",
+      "proposed_intervention": {
+        "intervention_type": "expiry_config",
+        "params": {
+          "expiry_hours": 4
+        }
+      },
+      "seed": 20260829,
+      "segment": "repeat_buyer",
+      "strategy": "RULE_BASED"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.05520000000000003,
+      "attempts": 5000,
+      "captured": 3634,
+      "captured_gmv_delta_vs_control_paise": 236213300,
+      "captured_gmv_paise": 2576296300,
+      "control_captured_gmv_paise": 2340083000,
+      "control_conversion_rate": 0.6716,
+      "conversion_rate": 0.7268,
+      "deployed_intervention": {
+        "intervention_type": "partial_payment",
+        "params": {
+          "accept_partial": true,
+          "first_min_partial_amount_pct": 0.25
+        }
+      },
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "965f02075d7a00040cb1a308508db5a4be5be39089345147a97f893766ea4c4c",
+      "policy_decision": "APPROVE",
+      "proposed_intervention": {
+        "intervention_type": "partial_payment",
+        "params": {
+          "accept_partial": true,
+          "first_min_partial_amount_pct": 0.25
+        }
+      },
+      "seed": 20260829,
+      "segment": "repeat_buyer",
+      "strategy": "AUTOPILOT"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.0,
+      "attempts": 5000,
+      "captured": 3640,
+      "captured_gmv_delta_vs_control_paise": 0,
+      "captured_gmv_paise": 5471326800,
+      "control_captured_gmv_paise": 5471326800,
+      "control_conversion_rate": 0.728,
+      "conversion_rate": 0.728,
+      "deployed_intervention": null,
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "24c77b87c5c7ed0847d4f0c39eb034e4ed33553a369befb527206435e8109b25",
+      "policy_decision": "N/A",
+      "proposed_intervention": null,
+      "seed": 20260829,
+      "segment": "ios_premium",
+      "strategy": "NO_OPTIMIZATION"
+    },
+    {
+      "absolute_conversion_delta_vs_control": -0.006800000000000028,
+      "attempts": 5000,
+      "captured": 3606,
+      "captured_gmv_delta_vs_control_paise": -22230400,
+      "captured_gmv_paise": 5449096400,
+      "control_captured_gmv_paise": 5471326800,
+      "control_conversion_rate": 0.728,
+      "conversion_rate": 0.7212,
+      "deployed_intervention": {
+        "intervention_type": "partial_payment",
+        "params": {
+          "accept_partial": true,
+          "first_min_partial_amount_pct": 0.25
+        }
+      },
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "24c77b87c5c7ed0847d4f0c39eb034e4ed33553a369befb527206435e8109b25",
+      "policy_decision": "APPROVE",
+      "proposed_intervention": {
+        "intervention_type": "partial_payment",
+        "params": {
+          "accept_partial": true,
+          "first_min_partial_amount_pct": 0.25
+        }
+      },
+      "seed": 20260829,
+      "segment": "ios_premium",
+      "strategy": "RANDOM_INTERVENTION"
+    },
+    {
+      "absolute_conversion_delta_vs_control": -0.027799999999999936,
+      "attempts": 5000,
+      "captured": 3501,
+      "captured_gmv_delta_vs_control_paise": -207641800,
+      "captured_gmv_paise": 5263685000,
+      "control_captured_gmv_paise": 5471326800,
+      "control_conversion_rate": 0.728,
+      "conversion_rate": 0.7002,
+      "deployed_intervention": {
+        "intervention_type": "expiry_config",
+        "params": {
+          "expiry_hours": 4
+        }
+      },
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "24c77b87c5c7ed0847d4f0c39eb034e4ed33553a369befb527206435e8109b25",
+      "policy_decision": "APPROVE",
+      "proposed_intervention": {
+        "intervention_type": "expiry_config",
+        "params": {
+          "expiry_hours": 4
+        }
+      },
+      "seed": 20260829,
+      "segment": "ios_premium",
+      "strategy": "RULE_BASED"
+    },
+    {
+      "absolute_conversion_delta_vs_control": -0.006800000000000028,
+      "attempts": 5000,
+      "captured": 3606,
+      "captured_gmv_delta_vs_control_paise": -22230400,
+      "captured_gmv_paise": 5449096400,
+      "control_captured_gmv_paise": 5471326800,
+      "control_conversion_rate": 0.728,
+      "conversion_rate": 0.7212,
+      "deployed_intervention": {
+        "intervention_type": "partial_payment",
+        "params": {
+          "accept_partial": true,
+          "first_min_partial_amount_pct": 0.25
+        }
+      },
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "24c77b87c5c7ed0847d4f0c39eb034e4ed33553a369befb527206435e8109b25",
+      "policy_decision": "APPROVE",
+      "proposed_intervention": {
+        "intervention_type": "partial_payment",
+        "params": {
+          "accept_partial": true,
+          "first_min_partial_amount_pct": 0.25
+        }
+      },
+      "seed": 20260829,
+      "segment": "ios_premium",
+      "strategy": "AUTOPILOT"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.0,
+      "attempts": 5000,
+      "captured": 2660,
+      "captured_gmv_delta_vs_control_paise": 0,
+      "captured_gmv_paise": 597896800,
+      "control_captured_gmv_paise": 597896800,
+      "control_conversion_rate": 0.532,
+      "conversion_rate": 0.532,
+      "deployed_intervention": null,
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "878d74080edf69c32aff33f15042b5189336e9adfdc3df3d5a1356dfe00143c1",
+      "policy_decision": "N/A",
+      "proposed_intervention": null,
+      "seed": 20260830,
+      "segment": "android_mid",
+      "strategy": "NO_OPTIMIZATION"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.12759999999999994,
+      "attempts": 5000,
+      "captured": 3298,
+      "captured_gmv_delta_vs_control_paise": 141774000,
+      "captured_gmv_paise": 739670800,
+      "control_captured_gmv_paise": 597896800,
+      "control_conversion_rate": 0.532,
+      "conversion_rate": 0.6596,
+      "deployed_intervention": {
+        "intervention_type": "payment_method_config",
+        "params": {
+          "card": false,
+          "upi": true
+        }
+      },
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "878d74080edf69c32aff33f15042b5189336e9adfdc3df3d5a1356dfe00143c1",
+      "policy_decision": "APPROVE",
+      "proposed_intervention": {
+        "intervention_type": "payment_method_config",
+        "params": {
+          "card": false,
+          "upi": true
+        }
+      },
+      "seed": 20260830,
+      "segment": "android_mid",
+      "strategy": "RANDOM_INTERVENTION"
+    },
+    {
+      "absolute_conversion_delta_vs_control": -0.009800000000000031,
+      "attempts": 5000,
+      "captured": 2611,
+      "captured_gmv_delta_vs_control_paise": -8488900,
+      "captured_gmv_paise": 589407900,
+      "control_captured_gmv_paise": 597896800,
+      "control_conversion_rate": 0.532,
+      "conversion_rate": 0.5222,
+      "deployed_intervention": {
+        "intervention_type": "expiry_config",
+        "params": {
+          "expiry_hours": 4
+        }
+      },
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "878d74080edf69c32aff33f15042b5189336e9adfdc3df3d5a1356dfe00143c1",
+      "policy_decision": "APPROVE",
+      "proposed_intervention": {
+        "intervention_type": "expiry_config",
+        "params": {
+          "expiry_hours": 4
+        }
+      },
+      "seed": 20260830,
+      "segment": "android_mid",
+      "strategy": "RULE_BASED"
+    },
+    {
+      "absolute_conversion_delta_vs_control": -0.009800000000000031,
+      "attempts": 5000,
+      "captured": 2611,
+      "captured_gmv_delta_vs_control_paise": -8488900,
+      "captured_gmv_paise": 589407900,
+      "control_captured_gmv_paise": 597896800,
+      "control_conversion_rate": 0.532,
+      "conversion_rate": 0.5222,
+      "deployed_intervention": {
+        "intervention_type": "expiry_config",
+        "params": {
+          "expiry_hours": 4
+        }
+      },
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "878d74080edf69c32aff33f15042b5189336e9adfdc3df3d5a1356dfe00143c1",
+      "policy_decision": "APPROVE",
+      "proposed_intervention": {
+        "intervention_type": "expiry_config",
+        "params": {
+          "expiry_hours": 4
+        }
+      },
+      "seed": 20260830,
+      "segment": "android_mid",
+      "strategy": "AUTOPILOT"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.0,
+      "attempts": 5000,
+      "captured": 2397,
+      "captured_gmv_delta_vs_control_paise": 0,
+      "captured_gmv_paise": 238509400,
+      "control_captured_gmv_paise": 238509400,
+      "control_conversion_rate": 0.4794,
+      "conversion_rate": 0.4794,
+      "deployed_intervention": null,
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "c76152d9d8852e2719b9055af5f9a10993d78e769a08b78e63719ae7282b1766",
+      "policy_decision": "N/A",
+      "proposed_intervention": null,
+      "seed": 20260830,
+      "segment": "android_budget",
+      "strategy": "NO_OPTIMIZATION"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.0,
+      "attempts": 5000,
+      "captured": 2397,
+      "captured_gmv_delta_vs_control_paise": 0,
+      "captured_gmv_paise": 238509400,
+      "control_captured_gmv_paise": 238509400,
+      "control_conversion_rate": 0.4794,
+      "conversion_rate": 0.4794,
+      "deployed_intervention": null,
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "c76152d9d8852e2719b9055af5f9a10993d78e769a08b78e63719ae7282b1766",
+      "policy_decision": "REJECT",
+      "proposed_intervention": {
+        "intervention_type": "offer_discount",
+        "params": {
+          "discount_pct": 0.05
+        }
+      },
+      "seed": 20260830,
+      "segment": "android_budget",
+      "strategy": "RANDOM_INTERVENTION"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.0,
+      "attempts": 5000,
+      "captured": 2397,
+      "captured_gmv_delta_vs_control_paise": 0,
+      "captured_gmv_paise": 238509400,
+      "control_captured_gmv_paise": 238509400,
+      "control_conversion_rate": 0.4794,
+      "conversion_rate": 0.4794,
+      "deployed_intervention": null,
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "c76152d9d8852e2719b9055af5f9a10993d78e769a08b78e63719ae7282b1766",
+      "policy_decision": "REJECT",
+      "proposed_intervention": {
+        "intervention_type": "offer_discount",
+        "params": {
+          "discount_pct": 0.05
+        }
+      },
+      "seed": 20260830,
+      "segment": "android_budget",
+      "strategy": "RULE_BASED"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.0,
+      "attempts": 5000,
+      "captured": 2397,
+      "captured_gmv_delta_vs_control_paise": 0,
+      "captured_gmv_paise": 238509400,
+      "control_captured_gmv_paise": 238509400,
+      "control_conversion_rate": 0.4794,
+      "conversion_rate": 0.4794,
+      "deployed_intervention": null,
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "c76152d9d8852e2719b9055af5f9a10993d78e769a08b78e63719ae7282b1766",
+      "policy_decision": "REJECT",
+      "proposed_intervention": {
+        "intervention_type": "offer_discount",
+        "params": {
+          "discount_pct": 0.05
+        }
+      },
+      "seed": 20260830,
+      "segment": "android_budget",
+      "strategy": "AUTOPILOT"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.0,
+      "attempts": 5000,
+      "captured": 2493,
+      "captured_gmv_delta_vs_control_paise": 0,
+      "captured_gmv_paise": 1106290300,
+      "control_captured_gmv_paise": 1106290300,
+      "control_conversion_rate": 0.4986,
+      "conversion_rate": 0.4986,
+      "deployed_intervention": null,
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "8564796c157fbc1b79c04cfc7d9def31651089f173484ce9834b440f6cec0bfc",
+      "policy_decision": "N/A",
+      "proposed_intervention": null,
+      "seed": 20260830,
+      "segment": "web_general",
+      "strategy": "NO_OPTIMIZATION"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.011799999999999977,
+      "attempts": 5000,
+      "captured": 2552,
+      "captured_gmv_delta_vs_control_paise": 17210400,
+      "captured_gmv_paise": 1123500700,
+      "control_captured_gmv_paise": 1106290300,
+      "control_conversion_rate": 0.4986,
+      "conversion_rate": 0.5104,
+      "deployed_intervention": {
+        "intervention_type": "partial_payment",
+        "params": {
+          "accept_partial": true,
+          "first_min_partial_amount_pct": 0.25
+        }
+      },
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "8564796c157fbc1b79c04cfc7d9def31651089f173484ce9834b440f6cec0bfc",
+      "policy_decision": "APPROVE",
+      "proposed_intervention": {
+        "intervention_type": "partial_payment",
+        "params": {
+          "accept_partial": true,
+          "first_min_partial_amount_pct": 0.25
+        }
+      },
+      "seed": 20260830,
+      "segment": "web_general",
+      "strategy": "RANDOM_INTERVENTION"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.0,
+      "attempts": 5000,
+      "captured": 2493,
+      "captured_gmv_delta_vs_control_paise": 0,
+      "captured_gmv_paise": 1106290300,
+      "control_captured_gmv_paise": 1106290300,
+      "control_conversion_rate": 0.4986,
+      "conversion_rate": 0.4986,
+      "deployed_intervention": null,
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "8564796c157fbc1b79c04cfc7d9def31651089f173484ce9834b440f6cec0bfc",
+      "policy_decision": "REJECT",
+      "proposed_intervention": {
+        "intervention_type": "offer_discount",
+        "params": {
+          "discount_pct": 0.05
+        }
+      },
+      "seed": 20260830,
+      "segment": "web_general",
+      "strategy": "RULE_BASED"
+    },
+    {
+      "absolute_conversion_delta_vs_control": -0.008000000000000007,
+      "attempts": 5000,
+      "captured": 2453,
+      "captured_gmv_delta_vs_control_paise": -14705400,
+      "captured_gmv_paise": 1091584900,
+      "control_captured_gmv_paise": 1106290300,
+      "control_conversion_rate": 0.4986,
+      "conversion_rate": 0.4906,
+      "deployed_intervention": {
+        "intervention_type": "expiry_config",
+        "params": {
+          "expiry_hours": 4
+        }
+      },
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "8564796c157fbc1b79c04cfc7d9def31651089f173484ce9834b440f6cec0bfc",
+      "policy_decision": "APPROVE",
+      "proposed_intervention": {
+        "intervention_type": "expiry_config",
+        "params": {
+          "expiry_hours": 4
+        }
+      },
+      "seed": 20260830,
+      "segment": "web_general",
+      "strategy": "AUTOPILOT"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.0,
+      "attempts": 5000,
+      "captured": 3392,
+      "captured_gmv_delta_vs_control_paise": 0,
+      "captured_gmv_paise": 2367740300,
+      "control_captured_gmv_paise": 2367740300,
+      "control_conversion_rate": 0.6784,
+      "conversion_rate": 0.6784,
+      "deployed_intervention": null,
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "190c937d7e5ab097c37910f4461f72a811fd931d9e26138eef33f90d0a1ba398",
+      "policy_decision": "N/A",
+      "proposed_intervention": null,
+      "seed": 20260830,
+      "segment": "repeat_buyer",
+      "strategy": "NO_OPTIMIZATION"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.0,
+      "attempts": 5000,
+      "captured": 3392,
+      "captured_gmv_delta_vs_control_paise": 0,
+      "captured_gmv_paise": 2367740300,
+      "control_captured_gmv_paise": 2367740300,
+      "control_conversion_rate": 0.6784,
+      "conversion_rate": 0.6784,
+      "deployed_intervention": null,
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "190c937d7e5ab097c37910f4461f72a811fd931d9e26138eef33f90d0a1ba398",
+      "policy_decision": "REJECT",
+      "proposed_intervention": {
+        "intervention_type": "offer_discount",
+        "params": {
+          "discount_pct": 0.05
+        }
+      },
+      "seed": 20260830,
+      "segment": "repeat_buyer",
+      "strategy": "RANDOM_INTERVENTION"
+    },
+    {
+      "absolute_conversion_delta_vs_control": -0.010600000000000054,
+      "attempts": 5000,
+      "captured": 3339,
+      "captured_gmv_delta_vs_control_paise": -23717700,
+      "captured_gmv_paise": 2344022600,
+      "control_captured_gmv_paise": 2367740300,
+      "control_conversion_rate": 0.6784,
+      "conversion_rate": 0.6678,
+      "deployed_intervention": {
+        "intervention_type": "expiry_config",
+        "params": {
+          "expiry_hours": 4
+        }
+      },
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "190c937d7e5ab097c37910f4461f72a811fd931d9e26138eef33f90d0a1ba398",
+      "policy_decision": "APPROVE",
+      "proposed_intervention": {
+        "intervention_type": "expiry_config",
+        "params": {
+          "expiry_hours": 4
+        }
+      },
+      "seed": 20260830,
+      "segment": "repeat_buyer",
+      "strategy": "RULE_BASED"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.027800000000000047,
+      "attempts": 5000,
+      "captured": 3531,
+      "captured_gmv_delta_vs_control_paise": 140104000,
+      "captured_gmv_paise": 2507844300,
+      "control_captured_gmv_paise": 2367740300,
+      "control_conversion_rate": 0.6784,
+      "conversion_rate": 0.7062,
+      "deployed_intervention": {
+        "intervention_type": "partial_payment",
+        "params": {
+          "accept_partial": true,
+          "first_min_partial_amount_pct": 0.25
+        }
+      },
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "190c937d7e5ab097c37910f4461f72a811fd931d9e26138eef33f90d0a1ba398",
+      "policy_decision": "APPROVE",
+      "proposed_intervention": {
+        "intervention_type": "partial_payment",
+        "params": {
+          "accept_partial": true,
+          "first_min_partial_amount_pct": 0.25
+        }
+      },
+      "seed": 20260830,
+      "segment": "repeat_buyer",
+      "strategy": "AUTOPILOT"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.0,
+      "attempts": 5000,
+      "captured": 3717,
+      "captured_gmv_delta_vs_control_paise": 0,
+      "captured_gmv_paise": 5599098300,
+      "control_captured_gmv_paise": 5599098300,
+      "control_conversion_rate": 0.7434,
+      "conversion_rate": 0.7434,
+      "deployed_intervention": null,
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "c717b2e938a635e97d4ea9ae52d15303901015236d082e204892f5c74d342aaa",
+      "policy_decision": "N/A",
+      "proposed_intervention": null,
+      "seed": 20260830,
+      "segment": "ios_premium",
+      "strategy": "NO_OPTIMIZATION"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.0,
+      "attempts": 5000,
+      "captured": 3717,
+      "captured_gmv_delta_vs_control_paise": 0,
+      "captured_gmv_paise": 5599098300,
+      "control_captured_gmv_paise": 5599098300,
+      "control_conversion_rate": 0.7434,
+      "conversion_rate": 0.7434,
+      "deployed_intervention": null,
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "c717b2e938a635e97d4ea9ae52d15303901015236d082e204892f5c74d342aaa",
+      "policy_decision": "REJECT",
+      "proposed_intervention": {
+        "intervention_type": "offer_discount",
+        "params": {
+          "discount_pct": 0.05
+        }
+      },
+      "seed": 20260830,
+      "segment": "ios_premium",
+      "strategy": "RANDOM_INTERVENTION"
+    },
+    {
+      "absolute_conversion_delta_vs_control": -0.023399999999999976,
+      "attempts": 5000,
+      "captured": 3600,
+      "captured_gmv_delta_vs_control_paise": -161388500,
+      "captured_gmv_paise": 5437709800,
+      "control_captured_gmv_paise": 5599098300,
+      "control_conversion_rate": 0.7434,
+      "conversion_rate": 0.72,
+      "deployed_intervention": {
+        "intervention_type": "expiry_config",
+        "params": {
+          "expiry_hours": 4
+        }
+      },
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "c717b2e938a635e97d4ea9ae52d15303901015236d082e204892f5c74d342aaa",
+      "policy_decision": "APPROVE",
+      "proposed_intervention": {
+        "intervention_type": "expiry_config",
+        "params": {
+          "expiry_hours": 4
+        }
+      },
+      "seed": 20260830,
+      "segment": "ios_premium",
+      "strategy": "RULE_BASED"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.0014000000000000679,
+      "attempts": 5000,
+      "captured": 3724,
+      "captured_gmv_delta_vs_control_paise": 13212800,
+      "captured_gmv_paise": 5612311100,
+      "control_captured_gmv_paise": 5599098300,
+      "control_conversion_rate": 0.7434,
+      "conversion_rate": 0.7448,
+      "deployed_intervention": {
+        "intervention_type": "partial_payment",
+        "params": {
+          "accept_partial": true,
+          "first_min_partial_amount_pct": 0.25
+        }
+      },
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "c717b2e938a635e97d4ea9ae52d15303901015236d082e204892f5c74d342aaa",
+      "policy_decision": "APPROVE",
+      "proposed_intervention": {
+        "intervention_type": "partial_payment",
+        "params": {
+          "accept_partial": true,
+          "first_min_partial_amount_pct": 0.25
+        }
+      },
+      "seed": 20260830,
+      "segment": "ios_premium",
+      "strategy": "AUTOPILOT"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.0,
+      "attempts": 5000,
+      "captured": 2639,
+      "captured_gmv_delta_vs_control_paise": 0,
+      "captured_gmv_paise": 593623600,
+      "control_captured_gmv_paise": 593623600,
+      "control_conversion_rate": 0.5278,
+      "conversion_rate": 0.5278,
+      "deployed_intervention": null,
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "3aca147b8ef2ec8651cd3d5f9a420993f60e03548a4e8c6244679b134eaba827",
+      "policy_decision": "N/A",
+      "proposed_intervention": null,
+      "seed": 20260831,
+      "segment": "android_mid",
+      "strategy": "NO_OPTIMIZATION"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.0,
+      "attempts": 5000,
+      "captured": 2639,
+      "captured_gmv_delta_vs_control_paise": 0,
+      "captured_gmv_paise": 593623600,
+      "control_captured_gmv_paise": 593623600,
+      "control_conversion_rate": 0.5278,
+      "conversion_rate": 0.5278,
+      "deployed_intervention": null,
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "3aca147b8ef2ec8651cd3d5f9a420993f60e03548a4e8c6244679b134eaba827",
+      "policy_decision": "REJECT",
+      "proposed_intervention": {
+        "intervention_type": "offer_discount",
+        "params": {
+          "discount_pct": 0.05
+        }
+      },
+      "seed": 20260831,
+      "segment": "android_mid",
+      "strategy": "RANDOM_INTERVENTION"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.0007999999999999119,
+      "attempts": 5000,
+      "captured": 2643,
+      "captured_gmv_delta_vs_control_paise": 6000800,
+      "captured_gmv_paise": 599624400,
+      "control_captured_gmv_paise": 593623600,
+      "control_conversion_rate": 0.5278,
+      "conversion_rate": 0.5286,
+      "deployed_intervention": {
+        "intervention_type": "expiry_config",
+        "params": {
+          "expiry_hours": 4
+        }
+      },
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "3aca147b8ef2ec8651cd3d5f9a420993f60e03548a4e8c6244679b134eaba827",
+      "policy_decision": "APPROVE",
+      "proposed_intervention": {
+        "intervention_type": "expiry_config",
+        "params": {
+          "expiry_hours": 4
+        }
+      },
+      "seed": 20260831,
+      "segment": "android_mid",
+      "strategy": "RULE_BASED"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.0007999999999999119,
+      "attempts": 5000,
+      "captured": 2643,
+      "captured_gmv_delta_vs_control_paise": 6000800,
+      "captured_gmv_paise": 599624400,
+      "control_captured_gmv_paise": 593623600,
+      "control_conversion_rate": 0.5278,
+      "conversion_rate": 0.5286,
+      "deployed_intervention": {
+        "intervention_type": "expiry_config",
+        "params": {
+          "expiry_hours": 4
+        }
+      },
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "3aca147b8ef2ec8651cd3d5f9a420993f60e03548a4e8c6244679b134eaba827",
+      "policy_decision": "APPROVE",
+      "proposed_intervention": {
+        "intervention_type": "expiry_config",
+        "params": {
+          "expiry_hours": 4
+        }
+      },
+      "seed": 20260831,
+      "segment": "android_mid",
+      "strategy": "AUTOPILOT"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.0,
+      "attempts": 5000,
+      "captured": 2407,
+      "captured_gmv_delta_vs_control_paise": 0,
+      "captured_gmv_paise": 241702900,
+      "control_captured_gmv_paise": 241702900,
+      "control_conversion_rate": 0.4814,
+      "conversion_rate": 0.4814,
+      "deployed_intervention": null,
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "754544ec6aae4c00eeafe7f3aa12d2ef494b0ab13efbf7f524e56d0882a61bbd",
+      "policy_decision": "N/A",
+      "proposed_intervention": null,
+      "seed": 20260831,
+      "segment": "android_budget",
+      "strategy": "NO_OPTIMIZATION"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.0,
+      "attempts": 5000,
+      "captured": 2407,
+      "captured_gmv_delta_vs_control_paise": 0,
+      "captured_gmv_paise": 241702900,
+      "control_captured_gmv_paise": 241702900,
+      "control_conversion_rate": 0.4814,
+      "conversion_rate": 0.4814,
+      "deployed_intervention": null,
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "754544ec6aae4c00eeafe7f3aa12d2ef494b0ab13efbf7f524e56d0882a61bbd",
+      "policy_decision": "REJECT",
+      "proposed_intervention": {
+        "intervention_type": "offer_discount",
+        "params": {
+          "discount_pct": 0.05
+        }
+      },
+      "seed": 20260831,
+      "segment": "android_budget",
+      "strategy": "RANDOM_INTERVENTION"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.0,
+      "attempts": 5000,
+      "captured": 2407,
+      "captured_gmv_delta_vs_control_paise": 0,
+      "captured_gmv_paise": 241702900,
+      "control_captured_gmv_paise": 241702900,
+      "control_conversion_rate": 0.4814,
+      "conversion_rate": 0.4814,
+      "deployed_intervention": null,
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "754544ec6aae4c00eeafe7f3aa12d2ef494b0ab13efbf7f524e56d0882a61bbd",
+      "policy_decision": "REJECT",
+      "proposed_intervention": {
+        "intervention_type": "offer_discount",
+        "params": {
+          "discount_pct": 0.05
+        }
+      },
+      "seed": 20260831,
+      "segment": "android_budget",
+      "strategy": "RULE_BASED"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.0,
+      "attempts": 5000,
+      "captured": 2407,
+      "captured_gmv_delta_vs_control_paise": 0,
+      "captured_gmv_paise": 241702900,
+      "control_captured_gmv_paise": 241702900,
+      "control_conversion_rate": 0.4814,
+      "conversion_rate": 0.4814,
+      "deployed_intervention": null,
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "754544ec6aae4c00eeafe7f3aa12d2ef494b0ab13efbf7f524e56d0882a61bbd",
+      "policy_decision": "REJECT",
+      "proposed_intervention": {
+        "intervention_type": "offer_discount",
+        "params": {
+          "discount_pct": 0.05
+        }
+      },
+      "seed": 20260831,
+      "segment": "android_budget",
+      "strategy": "AUTOPILOT"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.0,
+      "attempts": 5000,
+      "captured": 2458,
+      "captured_gmv_delta_vs_control_paise": 0,
+      "captured_gmv_paise": 1113059000,
+      "control_captured_gmv_paise": 1113059000,
+      "control_conversion_rate": 0.4916,
+      "conversion_rate": 0.4916,
+      "deployed_intervention": null,
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "6e9f50bf23ce1c77830fcab1daa50bbf7af368814a3af116ca0e50b0e2d55b40",
+      "policy_decision": "N/A",
+      "proposed_intervention": null,
+      "seed": 20260831,
+      "segment": "web_general",
+      "strategy": "NO_OPTIMIZATION"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.015600000000000003,
+      "attempts": 5000,
+      "captured": 2536,
+      "captured_gmv_delta_vs_control_paise": 29584400,
+      "captured_gmv_paise": 1142643400,
+      "control_captured_gmv_paise": 1113059000,
+      "control_conversion_rate": 0.4916,
+      "conversion_rate": 0.5072,
+      "deployed_intervention": {
+        "intervention_type": "expiry_config",
+        "params": {
+          "expiry_hours": 4
+        }
+      },
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "6e9f50bf23ce1c77830fcab1daa50bbf7af368814a3af116ca0e50b0e2d55b40",
+      "policy_decision": "APPROVE",
+      "proposed_intervention": {
+        "intervention_type": "expiry_config",
+        "params": {
+          "expiry_hours": 4
+        }
+      },
+      "seed": 20260831,
+      "segment": "web_general",
+      "strategy": "RANDOM_INTERVENTION"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.0,
+      "attempts": 5000,
+      "captured": 2458,
+      "captured_gmv_delta_vs_control_paise": 0,
+      "captured_gmv_paise": 1113059000,
+      "control_captured_gmv_paise": 1113059000,
+      "control_conversion_rate": 0.4916,
+      "conversion_rate": 0.4916,
+      "deployed_intervention": null,
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "6e9f50bf23ce1c77830fcab1daa50bbf7af368814a3af116ca0e50b0e2d55b40",
+      "policy_decision": "REJECT",
+      "proposed_intervention": {
+        "intervention_type": "offer_discount",
+        "params": {
+          "discount_pct": 0.05
+        }
+      },
+      "seed": 20260831,
+      "segment": "web_general",
+      "strategy": "RULE_BASED"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.015600000000000003,
+      "attempts": 5000,
+      "captured": 2536,
+      "captured_gmv_delta_vs_control_paise": 29584400,
+      "captured_gmv_paise": 1142643400,
+      "control_captured_gmv_paise": 1113059000,
+      "control_conversion_rate": 0.4916,
+      "conversion_rate": 0.5072,
+      "deployed_intervention": {
+        "intervention_type": "expiry_config",
+        "params": {
+          "expiry_hours": 4
+        }
+      },
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "6e9f50bf23ce1c77830fcab1daa50bbf7af368814a3af116ca0e50b0e2d55b40",
+      "policy_decision": "APPROVE",
+      "proposed_intervention": {
+        "intervention_type": "expiry_config",
+        "params": {
+          "expiry_hours": 4
+        }
+      },
+      "seed": 20260831,
+      "segment": "web_general",
+      "strategy": "AUTOPILOT"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.0,
+      "attempts": 5000,
+      "captured": 3357,
+      "captured_gmv_delta_vs_control_paise": 0,
+      "captured_gmv_paise": 2339272000,
+      "control_captured_gmv_paise": 2339272000,
+      "control_conversion_rate": 0.6714,
+      "conversion_rate": 0.6714,
+      "deployed_intervention": null,
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "90ac89ece0924ab0d794f150d43bbffbc08c648316a57d3aed1f9684e450381f",
+      "policy_decision": "N/A",
+      "proposed_intervention": null,
+      "seed": 20260831,
+      "segment": "repeat_buyer",
+      "strategy": "NO_OPTIMIZATION"
+    },
+    {
+      "absolute_conversion_delta_vs_control": -0.013399999999999967,
+      "attempts": 5000,
+      "captured": 3290,
+      "captured_gmv_delta_vs_control_paise": -21772100,
+      "captured_gmv_paise": 2317499900,
+      "control_captured_gmv_paise": 2339272000,
+      "control_conversion_rate": 0.6714,
+      "conversion_rate": 0.658,
+      "deployed_intervention": {
+        "intervention_type": "expiry_config",
+        "params": {
+          "expiry_hours": 4
+        }
+      },
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "90ac89ece0924ab0d794f150d43bbffbc08c648316a57d3aed1f9684e450381f",
+      "policy_decision": "APPROVE",
+      "proposed_intervention": {
+        "intervention_type": "expiry_config",
+        "params": {
+          "expiry_hours": 4
+        }
+      },
+      "seed": 20260831,
+      "segment": "repeat_buyer",
+      "strategy": "RANDOM_INTERVENTION"
+    },
+    {
+      "absolute_conversion_delta_vs_control": -0.013399999999999967,
+      "attempts": 5000,
+      "captured": 3290,
+      "captured_gmv_delta_vs_control_paise": -21772100,
+      "captured_gmv_paise": 2317499900,
+      "control_captured_gmv_paise": 2339272000,
+      "control_conversion_rate": 0.6714,
+      "conversion_rate": 0.658,
+      "deployed_intervention": {
+        "intervention_type": "expiry_config",
+        "params": {
+          "expiry_hours": 4
+        }
+      },
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "90ac89ece0924ab0d794f150d43bbffbc08c648316a57d3aed1f9684e450381f",
+      "policy_decision": "APPROVE",
+      "proposed_intervention": {
+        "intervention_type": "expiry_config",
+        "params": {
+          "expiry_hours": 4
+        }
+      },
+      "seed": 20260831,
+      "segment": "repeat_buyer",
+      "strategy": "RULE_BASED"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.05779999999999996,
+      "attempts": 5000,
+      "captured": 3646,
+      "captured_gmv_delta_vs_control_paise": 247836100,
+      "captured_gmv_paise": 2587108100,
+      "control_captured_gmv_paise": 2339272000,
+      "control_conversion_rate": 0.6714,
+      "conversion_rate": 0.7292,
+      "deployed_intervention": {
+        "intervention_type": "partial_payment",
+        "params": {
+          "accept_partial": true,
+          "first_min_partial_amount_pct": 0.25
+        }
+      },
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "90ac89ece0924ab0d794f150d43bbffbc08c648316a57d3aed1f9684e450381f",
+      "policy_decision": "APPROVE",
+      "proposed_intervention": {
+        "intervention_type": "partial_payment",
+        "params": {
+          "accept_partial": true,
+          "first_min_partial_amount_pct": 0.25
+        }
+      },
+      "seed": 20260831,
+      "segment": "repeat_buyer",
+      "strategy": "AUTOPILOT"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.0,
+      "attempts": 5000,
+      "captured": 3704,
+      "captured_gmv_delta_vs_control_paise": 0,
+      "captured_gmv_paise": 5538367000,
+      "control_captured_gmv_paise": 5538367000,
+      "control_conversion_rate": 0.7408,
+      "conversion_rate": 0.7408,
+      "deployed_intervention": null,
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "a7f9c79e2cd6cf82d0f2c64b386a52a10c7517e67e137f0b9090b6094d0a03cc",
+      "policy_decision": "N/A",
+      "proposed_intervention": null,
+      "seed": 20260831,
+      "segment": "ios_premium",
+      "strategy": "NO_OPTIMIZATION"
+    },
+    {
+      "absolute_conversion_delta_vs_control": -0.03400000000000003,
+      "attempts": 5000,
+      "captured": 3534,
+      "captured_gmv_delta_vs_control_paise": -250356400,
+      "captured_gmv_paise": 5288010600,
+      "control_captured_gmv_paise": 5538367000,
+      "control_conversion_rate": 0.7408,
+      "conversion_rate": 0.7068,
+      "deployed_intervention": {
+        "intervention_type": "expiry_config",
+        "params": {
+          "expiry_hours": 4
+        }
+      },
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "a7f9c79e2cd6cf82d0f2c64b386a52a10c7517e67e137f0b9090b6094d0a03cc",
+      "policy_decision": "APPROVE",
+      "proposed_intervention": {
+        "intervention_type": "expiry_config",
+        "params": {
+          "expiry_hours": 4
+        }
+      },
+      "seed": 20260831,
+      "segment": "ios_premium",
+      "strategy": "RANDOM_INTERVENTION"
+    },
+    {
+      "absolute_conversion_delta_vs_control": -0.03400000000000003,
+      "attempts": 5000,
+      "captured": 3534,
+      "captured_gmv_delta_vs_control_paise": -250356400,
+      "captured_gmv_paise": 5288010600,
+      "control_captured_gmv_paise": 5538367000,
+      "control_conversion_rate": 0.7408,
+      "conversion_rate": 0.7068,
+      "deployed_intervention": {
+        "intervention_type": "expiry_config",
+        "params": {
+          "expiry_hours": 4
+        }
+      },
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "a7f9c79e2cd6cf82d0f2c64b386a52a10c7517e67e137f0b9090b6094d0a03cc",
+      "policy_decision": "APPROVE",
+      "proposed_intervention": {
+        "intervention_type": "expiry_config",
+        "params": {
+          "expiry_hours": 4
+        }
+      },
+      "seed": 20260831,
+      "segment": "ios_premium",
+      "strategy": "RULE_BASED"
+    },
+    {
+      "absolute_conversion_delta_vs_control": 0.0023999999999999577,
+      "attempts": 5000,
+      "captured": 3716,
+      "captured_gmv_delta_vs_control_paise": 19432500,
+      "captured_gmv_paise": 5557799500,
+      "control_captured_gmv_paise": 5538367000,
+      "control_conversion_rate": 0.7408,
+      "conversion_rate": 0.7432,
+      "deployed_intervention": {
+        "intervention_type": "partial_payment",
+        "params": {
+          "accept_partial": true,
+          "first_min_partial_amount_pct": 0.25
+        }
+      },
+      "discount_exposure_paise": 0,
+      "paired_context_fingerprint": "a7f9c79e2cd6cf82d0f2c64b386a52a10c7517e67e137f0b9090b6094d0a03cc",
+      "policy_decision": "APPROVE",
+      "proposed_intervention": {
+        "intervention_type": "partial_payment",
+        "params": {
+          "accept_partial": true,
+          "first_min_partial_amount_pct": 0.25
+        }
+      },
+      "seed": 20260831,
+      "segment": "ios_premium",
+      "strategy": "AUTOPILOT"
+    }
+  ],
+  "seeds": [
+    20260827,
+    20260828,
+    20260829,
+    20260830,
+    20260831
+  ]
+}

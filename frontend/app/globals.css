@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  font-feature-settings: "cv11", "ss01";
+}
+
+/* Single restrained entrance treatment; no animation libraries. */
+@media (prefers-reduced-motion: no-preference) {
+  main > * {
+    animation: fade-in 0.18s ease-out;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
