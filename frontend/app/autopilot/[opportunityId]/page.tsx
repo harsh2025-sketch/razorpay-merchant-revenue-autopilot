@@ -1,5 +1,4 @@
 import { getCycle, getOverview } from "@/lib/api";
-import { MERCHANT_ID } from "@/lib/constants";
 import { describeApiError } from "@/lib/errors";
 import { CycleView } from "@/components/cycle-view";
 import { InlineError } from "@/components/inline-error";
@@ -13,15 +12,13 @@ export default async function CyclePage({
 }: {
   params: { opportunityId: string };
 }) {
-  const [cycleResult, overviewResult] = await Promise.allSettled([
-    getCycle(params.opportunityId),
-    getOverview(MERCHANT_ID),
-  ]);
-
-  if (cycleResult.status === "rejected") {
+  let cycle: AutopilotCycle;
+  try {
+    cycle = await getCycle(params.opportunityId);
+  } catch (caught) {
     return (
       <div className="mx-auto max-w-2xl pt-10">
-        <InlineError error={describeApiError(cycleResult.reason)} />
+        <InlineError error={describeApiError(caught)} />
         <div className="mt-4">
           <RetryRefresh />
         </div>
@@ -29,9 +26,9 @@ export default async function CyclePage({
     );
   }
 
-  const cycle: AutopilotCycle = cycleResult.value;
-  const overview: MerchantOverview | null =
-    overviewResult.status === "fulfilled" ? overviewResult.value : null;
+  const overview: MerchantOverview | null = await getOverview(
+    cycle.opportunity.merchant_id,
+  ).catch(() => null);
 
   return <CycleView initialCycle={cycle} initialOverview={overview} />;
 }
