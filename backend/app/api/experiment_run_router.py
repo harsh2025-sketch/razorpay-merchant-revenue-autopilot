@@ -1,9 +1,9 @@
-"""Task 21C dashboard route for one-click fixed-horizon experiments.
+"""Task 21C/22 dashboard route for fixed-horizon experiments.
 
-This route is intentionally additive and excluded from the frozen Task 15
-OpenAPI surface. It coordinates only the already-authorized runtime/statistics
-portion of the lifecycle; policy and Razorpay deployment remain separate
-explicit steps.
+The route remains additive and excluded from the frozen Task 15 OpenAPI surface.
+TechBazaar may use the sealed deterministic evaluation runtime. Uploaded
+merchants are never routed through that synthetic causal world; they receive an
+explicit live-outcome-required response instead.
 """
 
 from __future__ import annotations
@@ -17,6 +17,7 @@ from app.api.experiment_run_schemas import OneClickExperimentResponse
 from app.db.session import get_db
 from app.engines.statistics import StatisticalEvaluationError
 from app.services.one_click_experiment import (
+    LiveExperimentTrafficRequired,
     OneClickExperimentError,
     run_experiment_to_decision,
 )
@@ -44,12 +45,19 @@ def run_experiment_to_fixed_horizon(
     experiment_id: str,
     db: Session = Depends(get_db),
 ) -> OneClickExperimentResponse:
-    """Run authorized simulated traffic to horizon and evaluate once."""
+    """Run TechBazaar to decision or fail closed for real merchant traffic."""
     try:
         result = run_experiment_to_decision(db, experiment_id)
         payload = OneClickExperimentResponse.model_validate(result)
         db.commit()
         return payload
+    except LiveExperimentTrafficRequired as exc:
+        db.rollback()
+        raise _error(
+            409,
+            "LIVE_EXPERIMENT_TRAFFIC_REQUIRED",
+            _safe_message(exc),
+        ) from None
     except OneClickExperimentError as exc:
         db.rollback()
         raise _error(409, "EXPERIMENT_RUN_BLOCKED", _safe_message(exc)) from None

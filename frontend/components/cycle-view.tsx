@@ -10,6 +10,7 @@ import {
   rollbackExperiment,
   runExperimentToDecision,
 } from "@/lib/api";
+import { DEFAULT_MERCHANT_ID } from "@/lib/constants";
 import { describeApiError, type DescribedError } from "@/lib/errors";
 import { shortId } from "@/lib/format";
 import type {
@@ -77,8 +78,9 @@ function cycleStatusBadge(
 /**
  * Cycle detail state container. The page is a chronological decision record:
  * evidence → (boundary) → AI → plan → policy → Razorpay → progress → result.
- * Task 21C combines only the runtime + statistics user interaction into one
- * backend run-to-decision request after the treatment resource exists.
+ * TechBazaar can use the Task 21C one-click evaluation runtime. Task 22 keeps
+ * uploaded merchants out of that sealed synthetic world and waits for real
+ * assigned payment outcomes instead.
  */
 export function CycleView({
   initialCycle,
@@ -102,6 +104,10 @@ export function CycleView({
     : null;
   const deploymentBlocked =
     isCurrentCycle && status?.state === "DEPLOYMENT_BLOCKED";
+  const waitingForLiveOutcomes =
+    isCurrentCycle &&
+    merchantId !== DEFAULT_MERCHANT_ID &&
+    isOneClickExperimentAction(nextAction);
 
   const refetch = useCallback(async () => {
     const [freshCycle, freshOverview] = await Promise.all([
@@ -154,7 +160,9 @@ export function CycleView({
   const decision: StatisticalDecision | null = result?.decision ?? null;
 
   const headerAction =
-    nextAction === "ROLLBACK_TREATMENT" || nextAction === "STOP"
+    waitingForLiveOutcomes ||
+    nextAction === "ROLLBACK_TREATMENT" ||
+    nextAction === "STOP"
       ? null
       : nextAction;
 
@@ -242,7 +250,21 @@ export function CycleView({
         />
       )}
 
-      {cycle.progress && !result && (
+      {waitingForLiveOutcomes && (
+        <section className="rounded-lg border border-amber-200 bg-amber-50 p-5">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-amber-700">
+            Live experiment measurement required
+          </p>
+          <h2 className="mt-1 text-[16px] font-semibold text-gray-900">
+            Awaiting assigned real payment outcomes
+          </h2>
+          <p className="mt-2 max-w-3xl text-[13px] leading-relaxed text-gray-600">
+            This merchant was created from uploaded payment history. Revenue Autopilot will not use the TechBazaar synthetic causal simulator to manufacture its experiment result. A production payment-event integration must provide assigned control and treatment outcomes before the fixed-horizon statistical engine can evaluate this experiment.
+          </p>
+        </section>
+      )}
+
+      {cycle.progress && !result && !waitingForLiveOutcomes && (
         <ExperimentProgress progress={cycle.progress} />
       )}
 
