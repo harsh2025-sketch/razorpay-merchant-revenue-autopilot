@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { MerchantIntelligenceView } from "@/components/merchant-intelligence-view";
 import { InlineError } from "@/components/inline-error";
 import { PageHeader } from "@/components/page-header";
@@ -32,12 +33,12 @@ export default async function IntelligencePage() {
         <InlineError error={describeApiError(caught)} className="max-w-2xl" />
         <div className="mt-4 flex items-center gap-3">
           <RetryRefresh />
-          <a
+          <Link
             href="/onboarding"
             className="rounded-md border border-gray-300 bg-white px-3 py-2 text-[13px] font-medium text-gray-700 hover:bg-gray-50"
           >
             Choose merchant data
-          </a>
+          </Link>
         </div>
       </>
     );
