@@ -73,6 +73,8 @@ from app.services.executor import (
     rollback_experiment_treatment,
 )
 from app.services.portfolio import build_opportunity_portfolio
+from app.services.champion import get_merchant_champion_state
+from app.services.memory import get_merchant_experiment_memory
 
 # ---------------------------------------------------------------------------
 # Lifecycle vocabulary (mirrored as Literals in app.api.schemas)
@@ -725,6 +727,49 @@ def overview(db: Session, merchant_id: str) -> dict[str, Any]:
         "latest_result": result,
         "audit_chain_valid": verify_merchant_audit_chain(db, merchant_id),
         "autopilot_status": autopilot_status(db, merchant_id),
+    }
+
+
+def merchant_intelligence(db: Session, merchant_id: str) -> dict[str, Any]:
+    """Explain what Autopilot currently prioritizes and has learned.
+
+    This is a pure read model over Tasks 19A-19C. It does not create a new
+    source of truth: opportunity priority comes from the deterministic
+    portfolio service, learned history comes from terminal experiment memory,
+    and champion state is reconstructed only from persisted KEEP results.
+    """
+    get_merchant(db, merchant_id)
+    portfolio = build_opportunity_portfolio(db, merchant_id)
+    champion = get_merchant_champion_state(db, merchant_id)
+    memory = get_merchant_experiment_memory(db, merchant_id)
+
+    return {
+        "merchant": merchant_summary(db, merchant_id),
+        "portfolio": {
+            "merchant_id": portfolio.merchant_id,
+            "next_best_opportunity_id": portfolio.next_best_opportunity_id,
+            "opportunities": [asdict(row) for row in portfolio.opportunities],
+        },
+        "champion": {
+            "merchant_id": champion.merchant_id,
+            "version": champion.version,
+            "promotion_count": champion.promotion_count,
+            "latest_promotion_experiment_id": champion.latest_promotion_experiment_id,
+            "configs": [asdict(row) for row in champion.configs],
+        },
+        "memory": {
+            "merchant_id": memory.merchant_id,
+            "trial_count": memory.trial_count,
+            "completed_result_count": memory.completed_result_count,
+            "policy_rejection_count": memory.policy_rejection_count,
+            "keep_count": memory.keep_count,
+            "rollback_count": memory.rollback_count,
+            "inconclusive_count": memory.inconclusive_count,
+            "knowledge": [asdict(row) for row in memory.knowledge],
+            # Memory is built oldest-first for deterministic aggregation. The
+            # dashboard consumes terminal history newest-first.
+            "records": [asdict(row) for row in reversed(memory.records)],
+        },
     }
 
 

@@ -291,6 +291,115 @@ export interface AutopilotCycle {
   audit_chain_valid: boolean;
 }
 
+export interface RankedOpportunityIntelligence {
+  rank: number;
+  opportunity_id: string;
+  segment: string;
+  status: string;
+  detector_severity: number;
+  detected_conversion_rate: number | null;
+  comparison_conversion_rate: number | null;
+  conversion_gap: number;
+  segment_attempts: number;
+  average_captured_order_value_paise: number | null;
+  estimated_incremental_captures: number;
+  estimated_recoverable_gmv_paise: number | null;
+  prior_terminal_trials: number;
+  history_factor: number;
+  allowed_intervention_count: number;
+  previously_tried_interventions: string[];
+  untried_allowed_interventions: string[];
+  policy_feasible: boolean;
+  history_adjusted_gmv_proxy_paise: number | null;
+  priority_index: number;
+}
+
+export interface OpportunityPortfolioIntelligence {
+  merchant_id: string;
+  next_best_opportunity_id: string | null;
+  opportunities: RankedOpportunityIntelligence[];
+}
+
+export interface ChampionConfigIntelligence {
+  intervention_type: string;
+  config: Record<string, unknown>;
+  source_experiment_id: string;
+  promoted_at: string;
+  absolute_lift: number;
+  p_value: number;
+}
+
+export interface MerchantChampionIntelligence {
+  merchant_id: string;
+  version: number;
+  promotion_count: number;
+  configs: ChampionConfigIntelligence[];
+  latest_promotion_experiment_id: string | null;
+}
+
+export interface InterventionKnowledge {
+  segment: string;
+  intervention_type: string;
+  trial_count: number;
+  approved_count: number;
+  rejected_count: number;
+  completed_result_count: number;
+  keep_count: number;
+  rollback_count: number;
+  inconclusive_count: number;
+  latest_outcome: string;
+  latest_experiment_id: string;
+  latest_treatment_config: Record<string, unknown>;
+  latest_treatment_config_fingerprint: string;
+  latest_absolute_lift: number | null;
+  latest_p_value: number | null;
+}
+
+export interface ExperimentMemoryRecord {
+  experiment_id: string;
+  opportunity_id: string;
+  segment: string;
+  intervention_type: string;
+  treatment_config: Record<string, unknown>;
+  treatment_config_fingerprint: string;
+  experiment_status: string;
+  policy_decision: PolicyVerdict | null;
+  policy_violations: string[];
+  statistical_decision: StatisticalDecision | null;
+  control_rate: number | null;
+  treatment_rate: number | null;
+  absolute_lift: number | null;
+  relative_lift: number | null;
+  p_value: number | null;
+  confidence_interval_lower: number | null;
+  confidence_interval_upper: number | null;
+  is_significant: boolean | null;
+  treatment_resource_status: string | null;
+  terminal_reason: string;
+  created_at: string;
+  started_at: string | null;
+  ended_at: string | null;
+}
+
+export interface MerchantExperimentMemory {
+  merchant_id: string;
+  trial_count: number;
+  completed_result_count: number;
+  policy_rejection_count: number;
+  keep_count: number;
+  rollback_count: number;
+  inconclusive_count: number;
+  knowledge: InterventionKnowledge[];
+  records: ExperimentMemoryRecord[];
+}
+
+export interface MerchantIntelligence {
+  merchant: MerchantSummary;
+  portfolio: OpportunityPortfolioIntelligence;
+  champion: MerchantChampionIntelligence;
+  memory: MerchantExperimentMemory;
+}
+
 export interface AutopilotStep {
   merchant_id: string;
   step: AutopilotStepName;

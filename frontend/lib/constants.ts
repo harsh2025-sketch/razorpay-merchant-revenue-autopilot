@@ -39,6 +39,8 @@ export const AUDIT_PAGE_LIMIT = 100;
 
 export const API_PATHS = {
   overview: (merchantId: string) => `/api/v1/merchants/${merchantId}/overview`,
+  intelligence: (merchantId: string) =>
+    `/api/v1/merchants/${merchantId}/intelligence`,
   opportunities: (merchantId: string) =>
     `/api/v1/merchants/${merchantId}/opportunities`,
   cycle: (opportunityId: string) =>

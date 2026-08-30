@@ -6,6 +6,7 @@ import { MERCHANT_NAME } from "@/lib/constants";
 
 const NAV_LINKS = [
   { href: "/overview", label: "Overview" },
+  { href: "/intelligence", label: "Intelligence" },
   { href: "/autopilot", label: "Autopilot" },
   { href: "/audit", label: "Audit Log" },
 ];
