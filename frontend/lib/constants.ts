@@ -54,6 +54,8 @@ export const API_PATHS = {
     `/api/v1/merchants/${merchantId}/autopilot/new-cycle`,
   rollbackExperiment: (experimentId: string) =>
     `/api/v1/experiments/${experimentId}/rollback`,
+  runExperimentToDecision: (experimentId: string) =>
+    `/api/v1/experiments/${experimentId}/run-to-decision`,
   onboardingDemo: "/api/v1/onboarding/demo",
   onboardMerchantWithCsv: "/api/v1/onboarding/merchants/with-csv",
   onboardingDataStatus: (merchantId: string) =>
