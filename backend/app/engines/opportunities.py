@@ -3,8 +3,8 @@
 Detects underperforming segments by comparing a segment vs all other segments
 combined. Task 21B makes the evidence boundary explicit: opportunity detection
 uses historical merchant observations only (``experiment_id IS NULL``), never
-simulated experiment traffic, and an exhausted observation revision cannot be
-replayed into another detector pass until new data has been appended.
+simulated experiment traffic, and each historical revision is analyzed at most
+once.
 """
 
 from __future__ import annotations
@@ -23,7 +23,7 @@ from app.services.audit import (
     OPPORTUNITY_DETECTED,
     record_audit_event_once,
 )
-from app.services.incremental_data import has_new_data_since
+from app.services.incremental_data import detection_readiness, record_detection_pass
 
 
 @dataclass(frozen=True)
@@ -88,9 +88,7 @@ def _historical_payment_method_metrics(
             "captured": captured_i,
             "failed": int(failed or 0),
             "abandoned": int(abandoned or 0),
-            "success_rate": (
-                captured_i / attempts_i if attempts_i > 0 else None
-            ),
+            "success_rate": captured_i / attempts_i if attempts_i > 0 else None,
         }
     return dict(sorted(evidence.items()))
 
@@ -210,6 +208,20 @@ def detect_segment_conversion_opportunities(
 ACTIVE_STATUSES = {"detected", "investigating"}
 
 
+def _active_opportunities(db: Session, merchant_id: str) -> list[Opportunity]:
+    return list(
+        db.query(Opportunity)
+        .filter(Opportunity.merchant_id == merchant_id)
+        .filter(Opportunity.status.in_(list(ACTIVE_STATUSES)))
+        .order_by(
+            Opportunity.severity.desc(),
+            Opportunity.created_at.desc(),
+            Opportunity.id.asc(),
+        )
+        .all()
+    )
+
+
 def persist_detected_opportunities(
     db: Session,
     merchant_id: str,
@@ -261,30 +273,6 @@ def persist_detected_opportunities(
     return persisted
 
 
-def _detection_allowed_for_current_revision(db: Session, merchant_id: str) -> bool:
-    """Refuse a fresh scan after an exhausted unchanged observation pass."""
-    active = (
-        db.query(Opportunity.id)
-        .filter(Opportunity.merchant_id == merchant_id)
-        .filter(Opportunity.status.in_(list(ACTIVE_STATUSES)))
-        .first()
-    )
-    if active is not None:
-        # Existing active opportunities are returned idempotently by the
-        # persistence layer; this is not a new observation pass.
-        return True
-
-    latest = (
-        db.query(Opportunity)
-        .filter(Opportunity.merchant_id == merchant_id)
-        .order_by(Opportunity.created_at.desc(), Opportunity.id.desc())
-        .first()
-    )
-    if latest is None:
-        return True
-    return has_new_data_since(db, merchant_id, latest.created_at)
-
-
 def run_opportunity_detection(
     db: Session,
     merchant_id: str,
@@ -293,9 +281,22 @@ def run_opportunity_detection(
     min_absolute_gap: float = 0.08,
     max_results: int = 3,
 ) -> List[Opportunity]:
-    """Detect and persist exactly once per merchant-data revision."""
-    if not _detection_allowed_for_current_revision(db, merchant_id):
+    """Detect and persist at most once per historical observation revision.
+
+    Existing active opportunities are returned idempotently without rescanning
+    the dataset. Once an observation revision is actually analyzed, a durable
+    detector-pass marker is written even when zero opportunities are found.
+    Therefore repeated calls on unchanged evidence cannot manufacture another
+    fresh detector pass.
+    """
+    active = _active_opportunities(db, merchant_id)
+    if active:
+        return active
+
+    readiness = detection_readiness(db, merchant_id)
+    if not readiness.ready:
         return []
+
     detected = detect_segment_conversion_opportunities(
         db,
         merchant_id,
@@ -303,4 +304,10 @@ def run_opportunity_detection(
         min_absolute_gap=min_absolute_gap,
         max_results=max_results,
     )
-    return persist_detected_opportunities(db, merchant_id, detected)
+    persisted = persist_detected_opportunities(db, merchant_id, detected)
+    record_detection_pass(
+        db,
+        merchant_id,
+        opportunity_count=len(persisted),
+    )
+    return persisted
