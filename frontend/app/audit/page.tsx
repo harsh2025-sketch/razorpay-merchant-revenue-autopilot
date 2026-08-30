@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { getActiveMerchantId } from "@/lib/active-merchant";
 import { getMerchantAudit, getOverview } from "@/lib/api";
 import { AUDIT_PAGE_LIMIT } from "@/lib/constants";
@@ -28,12 +29,12 @@ export default async function AuditPage() {
         <InlineError error={describeApiError(auditResult.reason)} />
         <div className="mt-4 flex items-center gap-3">
           <RetryRefresh />
-          <a
+          <Link
             href="/onboarding"
             className="rounded-md border border-gray-300 bg-white px-3 py-2 text-[13px] font-medium text-gray-700 hover:bg-gray-50"
           >
             Choose merchant data
-          </a>
+          </Link>
         </div>
       </>
     );
