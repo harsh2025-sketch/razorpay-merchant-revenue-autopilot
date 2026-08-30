@@ -9,6 +9,7 @@ import type {
   DetectionReadiness,
   IncrementalCsvResult,
 } from "./data-types";
+import type { OneClickExperimentResult } from "./experiment-run-types";
 import type {
   AuditEvent,
   AutopilotStep,
@@ -176,7 +177,7 @@ export function appendDemoPeriod(): Promise<DemoPeriodResult> {
 }
 
 // ---------------------------------------------------------------------------
-// Lifecycle mutations - one user action, exactly one backend transition
+// Lifecycle mutations
 // ---------------------------------------------------------------------------
 
 export function advanceAutopilot(merchantId: string): Promise<AutopilotStep> {
@@ -185,6 +186,24 @@ export function advanceAutopilot(merchantId: string): Promise<AutopilotStep> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({}),
   });
+}
+
+/**
+ * Task 21C product action. Runtime and statistical evaluation are deliberately
+ * combined only after policy approval + treatment deployment. Earlier safety
+ * boundaries and a later Razorpay rollback remain explicit user-visible steps.
+ */
+export function runExperimentToDecision(
+  experimentId: string,
+): Promise<OneClickExperimentResult> {
+  return request<OneClickExperimentResult>(
+    API_PATHS.runExperimentToDecision(experimentId),
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({}),
+    },
+  );
 }
 
 /**
