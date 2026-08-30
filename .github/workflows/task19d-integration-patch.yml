@@ -1,0 +1,208 @@
+name: Task 19D diagnosis integration patch
+
+on:
+  push:
+    branches: [task19d/memory-aware-diagnosis]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: ${{ !contains(github.event.head_commit.message, '[task19d-integrated]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: task19d/memory-aware-diagnosis
+
+      - name: Patch diagnosis memory boundary
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('backend/app/engines/diagnosis.py')
+          text = path.read_text()
+
+          audit_marker = '''from app.services.audit import (
+              ACTOR_AI,
+              AI_DIAGNOSIS_CREATED,
+              ENTITY_HYPOTHESIS,
+              HYPOTHESIS_PROPOSED,
+              record_audit_event_once,
+          )
+          '''
+          memory_import = '''from app.services.diagnosis_memory import (
+              build_diagnosis_memory,
+              prompt_memory_payload,
+              stale_repeat_reason,
+          )
+          '''
+          if 'from app.services.diagnosis_memory import (' not in text:
+              if audit_marker not in text:
+                  raise SystemExit('diagnosis audit import marker not found')
+              text = text.replace(audit_marker, audit_marker + memory_import, 1)
+
+          retry_marker = '''STRUCTURED_OUTPUT_MAX_ATTEMPTS = 2
+          '''
+          retry_replacement = '''STRUCTURED_OUTPUT_MAX_ATTEMPTS = 2
+          MEMORY_PROPOSAL_MAX_ATTEMPTS = 2
+          '''
+          if 'MEMORY_PROPOSAL_MAX_ATTEMPTS' not in text:
+              if retry_marker not in text:
+                  raise SystemExit('structured retry marker not found')
+              text = text.replace(retry_marker, retry_replacement, 1)
+
+          old_signature = '''def _build_prompt_messages(
+              opportunity: Opportunity,
+              evidence_catalog: dict[str, object],
+              allowed_interventions: set[str],
+          ) -> list[dict[str, str]]:
+          '''
+          new_signature = '''def _build_prompt_messages(
+              opportunity: Opportunity,
+              evidence_catalog: dict[str, object],
+              allowed_interventions: set[str],
+              experiment_memory: Sequence[dict[str, object]] = (),
+          ) -> list[dict[str, str]]:
+          '''
+          if old_signature not in text:
+              raise SystemExit('prompt signature marker not found')
+          text = text.replace(old_signature, new_signature, 1)
+
+          context_marker = '''        "evidence_catalog": evidence_catalog,
+                  "allowed_interventions": allowed,
+                  "intervention_param_contracts": {
+          '''
+          context_replacement = '''        "evidence_catalog": evidence_catalog,
+                  "allowed_interventions": allowed,
+                  "experiment_memory": list(experiment_memory),
+                  "intervention_param_contracts": {
+          '''
+          if context_marker not in text:
+              raise SystemExit('prompt context marker not found')
+          text = text.replace(context_marker, context_replacement, 1)
+
+          rules_marker = '''        "- Choose exactly one intervention_type from allowed_interventions.\\n"
+                  "- intervention_params must follow intervention_param_contracts; they "
+          '''
+          rules_replacement = '''        "- Choose exactly one intervention_type from allowed_interventions.\\n"
+                  "- experiment_memory contains prior observed experiment outcomes. Exact "
+                  "configs with repeat_blocked=true must not be proposed again.\\n"
+                  "- A different semantic configuration of the same intervention remains "
+                  "allowed when it satisfies the intervention contract.\\n"
+                  "- Treat experiment history as observed evidence, never causal certainty.\\n"
+                  "- intervention_params must follow intervention_param_contracts; they "
+          '''
+          if rules_marker not in text:
+              raise SystemExit('prompt rules marker not found')
+          text = text.replace(rules_marker, rules_replacement, 1)
+
+          old_flow = '''    evidence_catalog = build_evidence_catalog(opportunity)
+          
+              if client is None:
+                  if not settings.OPENAI_API_KEY:
+                      raise DiagnosisConfigurationError(
+                          "OPENAI_API_KEY is not configured; cannot run AI diagnosis "
+                          "without an injected client"
+                      )
+                  client = OpenAI(api_key=settings.OPENAI_API_KEY)
+          
+              messages = _build_prompt_messages(opportunity, evidence_catalog, allowed_interventions)
+              proposal = _request_proposal(client, settings.OPENAI_MODEL, messages)
+              proposal = validate_proposal(proposal, evidence_catalog, allowed_interventions)
+          
+              return persist_hypothesis(
+                  db,
+                  opportunity=opportunity,
+                  proposal=proposal,
+                  ai_model=settings.OPENAI_MODEL,
+              )
+          '''
+          new_flow = '''    evidence_catalog = build_evidence_catalog(opportunity)
+              memory_trials = build_diagnosis_memory(
+                  db,
+                  opportunity,
+                  evidence_catalog,
+                  evidence_catalog_builder=build_evidence_catalog,
+              )
+              memory_payload = prompt_memory_payload(memory_trials)
+          
+              if client is None:
+                  if not settings.OPENAI_API_KEY:
+                      raise DiagnosisConfigurationError(
+                          "OPENAI_API_KEY is not configured; cannot run AI diagnosis "
+                          "without an injected client"
+                      )
+                  client = OpenAI(api_key=settings.OPENAI_API_KEY)
+          
+              messages = _build_prompt_messages(
+                  opportunity,
+                  evidence_catalog,
+                  allowed_interventions,
+                  memory_payload,
+              )
+              accepted_proposal: HypothesisProposal | None = None
+              last_repeat_reason: str | None = None
+              for attempt in range(MEMORY_PROPOSAL_MAX_ATTEMPTS):
+                  proposal = _request_proposal(client, settings.OPENAI_MODEL, messages)
+                  proposal = validate_proposal(
+                      proposal,
+                      evidence_catalog,
+                      allowed_interventions,
+                  )
+                  repeat_reason = stale_repeat_reason(
+                      memory_trials,
+                      intervention_type=proposal.intervention_type,
+                      intervention_params=proposal.intervention_params,
+                  )
+                  if repeat_reason is None:
+                      accepted_proposal = proposal
+                      break
+          
+                  last_repeat_reason = repeat_reason
+                  if attempt + 1 >= MEMORY_PROPOSAL_MAX_ATTEMPTS:
+                      break
+                  messages = [
+                      *messages,
+                      {
+                          "role": "user",
+                          "content": (
+                              "Deterministic memory validation rejected the proposed exact "
+                              f"repeat: {repeat_reason}. Propose a materially different "
+                              "semantic configuration or a different allowed intervention. "
+                              "Continue to use only evidence_catalog and do not invent metrics."
+                          ),
+                      },
+                  ]
+          
+              if accepted_proposal is None:
+                  raise DiagnosisOutputInvalidError(
+                      "AI proposal repeats blocked prior experiment: "
+                      f"{last_repeat_reason or 'stale experiment history'}"
+                  )
+          
+              return persist_hypothesis(
+                  db,
+                  opportunity=opportunity,
+                  proposal=accepted_proposal,
+                  ai_model=settings.OPENAI_MODEL,
+              )
+          '''
+          if old_flow not in text:
+              raise SystemExit('diagnose flow marker not found')
+          text = text.replace(old_flow, new_flow, 1)
+
+          path.write_text(text)
+          PY
+          git diff --check
+
+      - name: Commit focused integration
+        run: |
+          git config user.name "Harsh Dinodia"
+          git config user.email "ghosttalk719@gmail.com"
+          git add backend/app/engines/diagnosis.py
+          git diff --cached --check
+          git commit -m "feat: constrain diagnosis with experiment memory [task19d-integrated]"
+          git push origin HEAD:task19d/memory-aware-diagnosis
