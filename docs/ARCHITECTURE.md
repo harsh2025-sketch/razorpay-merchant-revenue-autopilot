@@ -1,101 +1,95 @@
-# Trust Architecture
+# Trust and Adaptive Architecture
 
-Merchant Revenue Autopilot is designed around one rule: the LLM can propose a commercial action, but it cannot authorize, execute, or judge that action by itself.
+Merchant Revenue Autopilot keeps probabilistic reasoning separate from authorization, execution, and statistical decision-making. The adaptive layer adds structured experiment memory, deterministic prioritization, and champion–challenger behavior without moving those control boundaries into the LLM.
 
 ## Control flow
 
 ```mermaid
 flowchart TD
-    A[Historical payment attempts] --> B[Metric engine]
+    A[Merchant-visible payment attempts] --> B[Metric engine]
     B --> C[Opportunity detector]
-    C --> D[Observable evidence catalog]
-    D --> E[LLM diagnosis]
-    E --> F[Schema and evidence validation]
-    F --> G[Deterministic experiment planner]
-    G --> H[Deterministic merchant policy]
-    H -->|REJECT| I[Stop and record violation codes]
-    H -->|APPROVE| J[Execution boundary]
-    J --> K[Sticky experiment assignment]
-    K --> L[Fixed-horizon statistical engine]
-    L --> M[KEEP]
-    L --> N[ROLLBACK]
-    L --> O[INCONCLUSIVE]
-
-    C --> P[Hash-chained audit]
-    E --> P
-    G --> P
-    H --> P
-    J --> P
-    K --> P
-    L --> P
+    C --> D[Deterministic opportunity portfolio]
+    D --> E[Observable evidence catalog]
+    E --> F[Terminal experiment memory]
+    F --> G[LLM diagnosis]
+    G --> H[Schema + evidence + stale-repeat validation]
+    H --> I[Champion-aware planner]
+    I --> J[Deterministic merchant policy]
+    J -->|REJECT| K[Stop + record violation]
+    J -->|APPROVE| L[Execution boundary]
+    L --> M[Sticky experiment runtime]
+    M --> N[Fixed-horizon statistics]
+    N --> O[KEEP / ROLLBACK / INCONCLUSIVE]
+    O --> P[Champion + terminal memory]
+    P --> D
+    C --> Q[Hash-chained audit]
+    G --> Q
+    I --> Q
+    J --> Q
+    L --> Q
+    M --> Q
+    N --> Q
 ```
 
-## Boundary 1: observation vs hidden evaluation world
+## Observation and prioritization
 
-The detector and LLM receive merchant-visible evidence only. The sealed causal model is not imported by the production decision path.
+The production path sees merchant-visible evidence only. The sealed causal model is isolated to the synthetic evaluation harness.
 
-The benchmark selects each strategy before any hidden causal outcome is scored. Only the evaluation harness accesses the frozen causal model after strategy selection. This prevents the benchmark from handing the answer to Autopilot.
+The detector decides whether a segment conversion divergence exists. The portfolio then ranks only untouched detected opportunities using observable gap, affected volume, captured average order value, merchant-policy feasibility, and previous terminal-trial count. A partially started lifecycle always resumes before a new candidate is considered.
 
-## Boundary 2: LLM vs deterministic code
+The history adjustment is explicit:
 
-The LLM returns a structured `HypothesisProposal` containing:
+```text
+history_factor = 1 / (1 + prior_terminal_trials)
+```
 
-- hypothesis text
-- intervention type
-- intervention parameters
-- confidence label
-- reasoning summary
-- evidence references
+Any GMV value produced by this layer is an opportunity-sizing proxy, not a revenue forecast or causal uplift claim.
 
-Deterministic validation rejects unsupported intervention parameters and references to evidence keys not present in the catalog.
+## Structured experiment memory
 
-The model cannot emit raw Razorpay request JSON and cannot invoke the payment client.
+Merchant learning is reconstructed from canonical persisted records rather than a separate conversational or vector memory store. Terminal experiment, policy, statistical-result, resource, opportunity, and hypothesis records provide the source of truth. Active work is excluded until it reaches a safe terminal state.
 
-## Boundary 3: planning vs authorization
+The LLM receives compact prior trial context for the affected segment. Deterministic code then validates the new proposal after structured-output and evidence checks.
 
-The planner controls traffic split, metric, guardrails, minimum sample size, duration, and canonical control/treatment configuration.
+- exact previously policy-rejected proposals remain blocked;
+- exact previous ROLLBACK/INCONCLUSIVE proposals are blocked when observable evidence has not materially changed;
+- reconsideration can occur only after explicit material evidence change, including a >=2 percentage-point rate movement or sufficiently large new segment observations.
 
-Merchant policy is a separate deterministic gate. It checks:
+One bounded corrective diagnosis attempt is permitted when a valid structured proposal is rejected only as a stale repeat. Nothing is persisted until the proposal passes all checks.
 
-- intervention allow-list
-- treatment exposure
-- discount limits
-- optional margin constraints
-- observable financial exposure
-- minimum sample
-- maximum duration
-- concurrent experiment limit
-- segment conflicts
-- treatment configuration validity
+## Champion–challenger planning
 
-The policy engine returns `APPROVE` or `REJECT`. It never silently clamps an unsafe proposal into a different experiment.
+Champion state is derived from historical statistical KEEP results.
 
-## Boundary 4: authorization vs execution
+- merchant baseline is Champion v1;
+- only KEEP promotes a treatment;
+- for the same intervention type, future experiments inherit the promoted champion as control;
+- ROLLBACK and INCONCLUSIVE retain the existing champion;
+- a challenger identical to its champion is rejected.
 
-The executor refuses deployment without an approved policy decision.
+This makes the learning loop behavioral rather than a dashboard label.
 
-Real mode calls Razorpay Test Mode through a thin HTTP client. Hosted demo mode uses an explicit simulated adapter and produces IDs in the `demo_...` namespace. The UI labels those resources as simulated and states that no Razorpay request was made.
+## Planning and merchant policy
 
-## Boundary 5: external write ambiguity
+The planner owns experiment structure: control/treatment configuration, treatment exposure, primary metric, guardrails, sample horizon, and duration.
 
-Orders and Payment Links do not rely on a fabricated generic Razorpay idempotency header. The application uses an `operation_executions` ledger with a unique operation key.
+A separate deterministic policy gate checks the complete planned experiment against merchant limits such as intervention allow-list, exposure, discount limits, optional margin rules, observable exposure, sample size, duration, concurrent experiments, segment conflicts, and configuration validity.
 
-For real external writes:
+Policy returns APPROVE or REJECT. It does not silently rewrite an unsafe proposal into a different approved proposal.
 
-- a confirmed success records the resource
-- a definitive client failure records failure
-- a timeout, transport failure, or ambiguous server failure remains unresolved
-- the system does not automatically retry an unresolved write
+## Execution boundary and duplicate protection
 
-This favors duplicate prevention over pretending an uncertain write did not happen.
+The executor requires a persisted APPROVE decision.
 
-## Boundary 6: experiment vs decision
+Real mode uses the implemented Razorpay Test Mode client. Hosted demo mode uses an explicitly labelled simulated adapter with `demo_...` resource IDs and makes no Razorpay API request.
 
-Runtime traffic uses deterministic sticky assignment.
+Application-level operation keys and canonical request hashes protect external writes. Confirmed successes are recorded; definitive failures are recorded; ambiguous outcomes remain unresolved and are not automatically retried.
 
-The system does not show or use interim p-values to stop early. Evaluation waits for the fixed sample horizon.
+## Fixed-horizon statistics
 
-The statistical engine uses a two-proportion z-test and practical lift threshold:
+Runtime uses deterministic sticky assignment. Interim p-values do not trigger early stopping.
+
+At the fixed horizon:
 
 ```text
 p < 0.05 and absolute lift >= +0.02  -> KEEP
@@ -103,38 +97,49 @@ p < 0.05 and absolute lift <= -0.02  -> ROLLBACK
 otherwise                            -> INCONCLUSIVE
 ```
 
-The LLM is not called during the statistical decision.
+The LLM does not participate in the statistical decision.
 
-## Boundary 7: lifecycle vs audit
+Terminal results feed structured memory. KEEP alone advances champion state.
 
-Merchant-visible lifecycle events are append-only at the application layer and linked with SHA-256 hashes per merchant.
+## Audit boundary
 
-The audit chain covers detection, diagnosis, hypothesis, planning, policy, execution, runtime, statistics, and rollback. The frontend verifies and displays chain integrity.
+Meaningful merchant lifecycle events are linked per merchant with SHA-256 hashes. The audit history covers detection, diagnosis, planning, policy, execution, runtime, statistics, rollback, and treatment promotion. The frontend verifies and displays chain integrity.
 
-This is tamper evidence for the application demo, not a blockchain or distributed-ledger claim.
+This provides application-level tamper evidence; it is not a blockchain claim.
 
-## Deployment topology
+## Repeatable cycles
+
+Starting another optimization cycle preserves prior opportunities, experiments, policy decisions, resources, results, payment attempts, learned memory, and audit events.
+
+A partially started or deployed cycle cannot be skipped. If an untouched detected candidate exists, the deterministic portfolio may select it. Otherwise a fresh deterministic detection can create the next opportunity.
+
+## Merchant Intelligence
+
+`GET /api/v1/merchants/{merchant_id}/intelligence` is a read-only projection over:
+
+- opportunity portfolio
+- KEEP-derived champion state
+- terminal experiment memory
+
+The frontend exposes these on `/intelligence`; React does not recompute the underlying learning or ranking decisions.
+
+## Hosted topology
 
 ```text
 Browser
-  |
-  | HTTPS
-  v
-Vercel Next.js frontend
-  |
-  | HTTPS
-  v
-Render FastAPI backend
-  |
-  +--> Supabase PostgreSQL
-  |
-  +--> OpenAI-compatible LLM endpoint
-  |
-  +--> Execution mode
-       |-- real: Razorpay Test Mode API
-       `-- simulated: local hosted-demo adapter
+  -> Vercel Next.js frontend
+  -> Render FastAPI backend
+       -> Supabase PostgreSQL
+       -> OpenAI-compatible LLM endpoint
+       -> real Razorpay Test Mode client OR explicit simulated demo adapter
 ```
 
-## Why the architecture matters
+## Task 20 production verification
 
-A growth agent is risky if the same probabilistic component proposes a financial action, decides whether it is allowed, performs the write, and declares itself successful. Revenue Autopilot separates those responsibilities so each high-impact transition can be inspected and tested independently.
+The final adaptive verification started with two terminal trials and Champion v1. No untouched opportunity existed before rollover, so the next cycle came from fresh deterministic detection.
+
+The guarded hosted journey verified memory-aware diagnosis, champion-control planning, policy authorization, simulated execution, active-cycle rollover protection, fixed-horizon evaluation, learning persistence, and audit integrity.
+
+The third cycle ended INCONCLUSIVE. Trial count advanced from 2 to 3 while Champion correctly remained v1 because no KEEP occurred.
+
+See [`PRODUCTION_VERIFICATION.md`](PRODUCTION_VERIFICATION.md) for the exact evidence.
