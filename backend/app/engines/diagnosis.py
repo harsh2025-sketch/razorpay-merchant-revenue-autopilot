@@ -28,13 +28,6 @@ from sqlalchemy.orm import Session
 
 from app.config import get_settings
 from app.db.models import Hypothesis, MerchantPolicy, Opportunity
-from app.services.audit import (
-    ACTOR_AI,
-    AI_DIAGNOSIS_CREATED,
-    ENTITY_HYPOTHESIS,
-    HYPOTHESIS_PROPOSED,
-    record_audit_event_once,
-)
 from app.engines.metrics import PAYMENT_METHOD_ORDER
 from app.schemas.hypothesis import (
     EXPIRY_MAX_HOURS,
@@ -46,6 +39,14 @@ from app.schemas.hypothesis import (
     REASONING_SUMMARY_MAX_LENGTH,
     HypothesisProposal,
 )
+from app.services.audit import (
+    ACTOR_AI,
+    AI_DIAGNOSIS_CREATED,
+    ENTITY_HYPOTHESIS,
+    HYPOTHESIS_PROPOSED,
+    record_audit_event_once,
+)
+
 
 # ---------------------------------------------------------------------------
 # Diagnosis-specific errors (small, no generic error framework)
@@ -70,6 +71,11 @@ class DiagnosisOutputInvalidError(DiagnosisError):
 
 #: Only hypotheses in this status count as "active" for duplicate suppression.
 ACTIVE_HYPOTHESIS_STATUS = "proposed"
+
+#: A malformed structured provider response is safe to request once more:
+#: diagnosis has no external financial side effect, and nothing is persisted
+#: until a proposal has passed schema + semantic validation.
+STRUCTURED_OUTPUT_MAX_ATTEMPTS = 2
 
 #: Top-level evidence keys that are flattened verbatim into the catalog.
 _CATALOG_SCALAR_KEYS: tuple[str, ...] = (
@@ -140,36 +146,21 @@ def build_evidence_catalog(opportunity: Opportunity) -> dict[str, object]:
     else present in the evidence JSON (in particular hidden/causal keys that
     must never exist in this pipeline) is dropped, never forwarded to the
     model. The output key order is fully deterministic.
-
-    Flattened shape::
-
-        {
-          "segment_conversion_rate": 0.472,
-          "comparison_conversion_rate": 0.586,
-          "absolute_gap": 0.114,
-          "payment_method.upi.success_rate": 0.51,
-          "payment_method.card.success_rate": 0.39,
-          "failure_reason.bank_declined": 140,
-          ...
-        }
     """
     evidence: dict = dict(opportunity.evidence or {})
     catalog: dict[str, object] = {}
 
-    # Observable scalar metrics.
     for key in _CATALOG_SCALAR_KEYS:
         value = evidence.get(key)
         if value is not None:
             catalog[key] = value
 
-    # Derive the absolute gap deterministically when absent.
     if "absolute_gap" not in catalog:
         segment_rate = evidence.get("segment_conversion_rate")
         comparison_rate = evidence.get("comparison_conversion_rate")
         if _is_number(segment_rate) and _is_number(comparison_rate):
             catalog["absolute_gap"] = comparison_rate - segment_rate
 
-    # Per-payment-method observable statistics.
     method_metrics = evidence.get("payment_method_metrics")
     if isinstance(method_metrics, dict):
         for method in sorted(method_metrics, key=_payment_method_sort_key):
@@ -181,7 +172,6 @@ def build_evidence_catalog(opportunity: Opportunity) -> dict[str, object]:
                 if value is not None:
                     catalog[f"payment_method.{method}.{stat_key}"] = value
 
-    # Failure reason counts for failed attempts in the segment.
     failure_reasons = evidence.get("failure_reasons")
     if isinstance(failure_reasons, dict):
         for reason in sorted(failure_reasons):
@@ -214,8 +204,8 @@ def _validate_intervention_params(
     """Validate semantic intervention parameters for the chosen intervention.
 
     This is proposal-shape validation only. Unsafe-but-well-formed financial
-    proposals (e.g. discount_pct = 0.20 above a merchant's 15% policy cap)
-    intentionally pass here; merchant policy enforcement happens later.
+    proposals intentionally pass here; merchant policy enforcement happens
+    later.
     """
     if not isinstance(params, dict) or not params:
         raise DiagnosisOutputInvalidError(
@@ -293,18 +283,7 @@ def validate_proposal(
     evidence_catalog: dict[str, object],
     allowed_interventions: set[str] | Sequence[str],
 ) -> HypothesisProposal:
-    """Deterministically validate a structured proposal.
-
-    Rejects:
-    1. intervention types outside the allowed set,
-    2. evidence refs not present in the supplied evidence catalog,
-    3. unsupported/invalid intervention params,
-    4. missing required fields (enforced by the Pydantic schema),
-    5. empty diagnosis/hypothesis/reasoning,
-    6. invalid confidence.
-
-    Returns a normalized copy of the proposal (stripped text fields).
-    """
+    """Deterministically validate a structured proposal."""
     allowed = set(allowed_interventions)
 
     if proposal.intervention_type not in INTERVENTION_TYPE_SET:
@@ -369,13 +348,7 @@ def _build_prompt_messages(
     evidence_catalog: dict[str, object],
     allowed_interventions: set[str],
 ) -> list[dict[str, str]]:
-    """Build the model prompt from observable opportunity data only.
-
-    The prompt contains only: opportunity identifiers/type/segment/severity/
-    detected metric values, the deterministic evidence catalog, the allowed
-    interventions, and the semantic parameter contracts. Nothing from the
-    causal model, hidden effects, or simulator truth is ever included.
-    """
+    """Build the model prompt from observable opportunity data only."""
     allowed = sorted(allowed_interventions)
     context = {
         "opportunity": {
@@ -411,47 +384,91 @@ def _build_prompt_messages(
 
 
 # ---------------------------------------------------------------------------
-# OpenAI structured-output boundary (the only network call)
+# OpenAI-compatible structured-output boundary (the only network call)
 # ---------------------------------------------------------------------------
+
+
+def _provider_parse_kwargs(client: OpenAI) -> dict[str, object]:
+    """Return provider-routing safeguards only when using OpenRouter.
+
+    OpenRouter recommends ``require_parameters`` when a request depends on
+    provider-specific capabilities such as JSON-schema structured output. The
+    option must not be sent to the native OpenAI API, so it is derived from the
+    configured client's base URL rather than from the model name.
+    """
+    base_url = str(getattr(client, "base_url", ""))
+    if "openrouter.ai" in base_url.lower():
+        return {"extra_body": {"provider": {"require_parameters": True}}}
+    return {}
 
 
 def _request_proposal(
     client: OpenAI, model: str, messages: list[dict[str, str]]
 ) -> HypothesisProposal:
-    """Call OpenAI structured outputs and return the parsed proposal.
+    """Request and parse a structured proposal with one bounded parse retry.
 
-    This is the single, small network boundary of the diagnosis engine; tests
-    inject a fake client here instead of touching the real API.
+    ``chat.completions.parse`` performs Pydantic parsing inside the OpenAI
+    Python SDK. A provider can therefore return HTTP 200 while local parsing
+    raises ``pydantic.ValidationError``. That is model-output invalidity, not
+    an application 500. We retry that *non-persisting* diagnosis request once;
+    if both attempts are malformed, the deterministic API boundary returns the
+    existing ``AI_OUTPUT_REJECTED`` error and no hypothesis is written.
     """
-    try:
-        completion = client.chat.completions.parse(
-            messages=messages,
-            model=model,
-            response_format=HypothesisProposal,
-        )
-    except OpenAIError as exc:
-        raise DiagnosisError(
-            f"OpenAI request failed during diagnosis: {exc}"
-        ) from exc
+    parse_kwargs = _provider_parse_kwargs(client)
+    last_invalid: BaseException | None = None
 
-    parsed: object = None
-    choices = getattr(completion, "choices", None)
-    if choices:
-        message = getattr(choices[0], "message", None)
-        parsed = getattr(message, "parsed", None)
-
-    if parsed is None:
-        raise DiagnosisOutputInvalidError(
-            "OpenAI structured output did not produce a parsed proposal"
-        )
-    if not isinstance(parsed, HypothesisProposal):
+    for attempt in range(STRUCTURED_OUTPUT_MAX_ATTEMPTS):
         try:
-            parsed = HypothesisProposal.model_validate(parsed)
+            completion = client.chat.completions.parse(
+                messages=messages,
+                model=model,
+                response_format=HypothesisProposal,
+                **parse_kwargs,
+            )
         except PydanticValidationError as exc:
+            last_invalid = exc
+            if attempt + 1 < STRUCTURED_OUTPUT_MAX_ATTEMPTS:
+                continue
             raise DiagnosisOutputInvalidError(
-                f"OpenAI structured output failed schema validation: {exc}"
+                "AI structured output failed schema parsing after the bounded retry"
             ) from exc
-    return parsed
+        except OpenAIError as exc:
+            raise DiagnosisError(
+                f"OpenAI request failed during diagnosis: {exc}"
+            ) from exc
+
+        parsed: object = None
+        choices = getattr(completion, "choices", None)
+        if choices:
+            message = getattr(choices[0], "message", None)
+            parsed = getattr(message, "parsed", None)
+
+        if parsed is None:
+            last_invalid = DiagnosisOutputInvalidError(
+                "OpenAI structured output did not produce a parsed proposal"
+            )
+            if attempt + 1 < STRUCTURED_OUTPUT_MAX_ATTEMPTS:
+                continue
+            raise DiagnosisOutputInvalidError(
+                "AI structured output did not produce a parsed proposal after the bounded retry"
+            ) from last_invalid
+
+        if not isinstance(parsed, HypothesisProposal):
+            try:
+                parsed = HypothesisProposal.model_validate(parsed)
+            except PydanticValidationError as exc:
+                last_invalid = exc
+                if attempt + 1 < STRUCTURED_OUTPUT_MAX_ATTEMPTS:
+                    continue
+                raise DiagnosisOutputInvalidError(
+                    "AI structured output failed schema validation after the bounded retry"
+                ) from exc
+        return parsed
+
+    # Defensive only: every branch above returns or raises.
+    raise DiagnosisOutputInvalidError(
+        "AI structured output could not be validated"
+    ) from last_invalid
 
 
 # ---------------------------------------------------------------------------
@@ -468,10 +485,7 @@ def persist_hypothesis(
 ) -> Hypothesis:
     """Persist a validated proposal as a Hypothesis ORM row.
 
-    Adds and flushes, but never commits - the caller controls the
-    transaction. The diagnosis is folded into reasoning_summary in the
-    documented concise format since the Hypothesis model has no diagnosis
-    column.
+    Adds and flushes, but never commits - the caller controls the transaction.
     """
     diagnosis = proposal.diagnosis.strip()
     if len(diagnosis) + len(proposal.reasoning_summary) > _COMBINED_REASONING_MAX_LENGTH:
@@ -533,24 +547,11 @@ def persist_hypothesis(
 def _resolve_allowed_interventions(
     policy: MerchantPolicy | None,
 ) -> set[str]:
-    """Resolve the allowed intervention set with fail-closed semantics.
-
-    - ``policy is None`` (no merchant-specific allow-list configured)
-      → the full supported intervention set.
-    - Policy exists and the allow-list is a valid list/tuple/set
-      → the intersection with the supported intervention types. The result
-      MAY be empty; it is never widened back to the full set.
-    - Policy exists but the allow-list is malformed (not a collection)
-      → an empty set. Never grant all interventions.
-
-    Financial policy limits (discount caps etc.) are deliberately NOT
-    consulted here.
-    """
+    """Resolve the allowed intervention set with fail-closed semantics."""
     if policy is None:
         return set(INTERVENTION_TYPE_SET)
     listed = policy.allowed_interventions
     if not isinstance(listed, (list, tuple, set, frozenset)):
-        # Malformed allow-list: fail closed, grant nothing.
         return set()
     return {item for item in listed if item in INTERVENTION_TYPE_SET}
 
@@ -562,18 +563,6 @@ def diagnose_opportunity(
     client: OpenAI | None = None,
 ) -> Hypothesis:
     """Diagnose one Opportunity and persist a validated Hypothesis.
-
-    Flow:
-    1. fetch the Opportunity (clear error if missing),
-    2. return the existing active ("proposed") Hypothesis if present,
-    3. fetch the MerchantPolicy intervention allow-list if available,
-       failing closed (DiagnosisConfigurationError) when zero interventions
-       are enabled - before any model call,
-    4. build the deterministic evidence catalog,
-    5. construct the prompt from observable evidence only,
-    6. request a structured proposal from OpenAI,
-    7. deterministically validate the proposal,
-    8. persist the Hypothesis and flush.
 
     Never commits - the caller controls the transaction. Never persists
     anything when validation fails or when no interventions are enabled.
@@ -590,7 +579,6 @@ def diagnose_opportunity(
         .first()
     )
     if existing is not None:
-        # Duplicate suppression: reuse the existing active proposal.
         return existing
 
     settings = get_settings()
@@ -602,8 +590,6 @@ def diagnose_opportunity(
     )
     allowed_interventions = _resolve_allowed_interventions(policy)
     if not allowed_interventions:
-        # Fail closed: zero enabled interventions means no diagnosis may be
-        # produced. Bail out before building the prompt or calling the model.
         raise DiagnosisConfigurationError(
             "No interventions are enabled for this merchant."
         )
