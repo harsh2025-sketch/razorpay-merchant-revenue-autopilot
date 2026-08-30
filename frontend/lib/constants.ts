@@ -58,4 +58,9 @@ export const API_PATHS = {
   onboardMerchantWithCsv: "/api/v1/onboarding/merchants/with-csv",
   onboardingDataStatus: (merchantId: string) =>
     `/api/v1/onboarding/merchants/${merchantId}/data-status`,
+  appendMerchantCsv: (merchantId: string) =>
+    `/api/v1/data/merchants/${merchantId}/append-csv`,
+  appendDemoPeriod: "/api/v1/data/demo/next-period",
+  detectionReadiness: (merchantId: string) =>
+    `/api/v1/data/merchants/${merchantId}/detection-readiness`,
 } as const;

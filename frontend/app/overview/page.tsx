@@ -1,5 +1,9 @@
 import Link from "next/link";
-import { getMerchantAudit, getOverview } from "@/lib/api";
+import {
+  getDetectionReadiness,
+  getMerchantAudit,
+  getOverview,
+} from "@/lib/api";
 import { getActiveMerchantId } from "@/lib/active-merchant";
 import { DEFAULT_MERCHANT_NAME, RECENT_ACTIVITY_LIMIT } from "@/lib/constants";
 import { describeApiError } from "@/lib/errors";
@@ -14,9 +18,10 @@ export const dynamic = "force-dynamic";
 
 export default async function OverviewPage() {
   const merchantId = getActiveMerchantId();
-  const [overviewResult, auditResult] = await Promise.allSettled([
+  const [overviewResult, auditResult, readinessResult] = await Promise.allSettled([
     getOverview(merchantId),
     getMerchantAudit(merchantId, RECENT_ACTIVITY_LIMIT),
+    getDetectionReadiness(merchantId),
   ]);
 
   if (overviewResult.status === "rejected") {
@@ -44,6 +49,10 @@ export default async function OverviewPage() {
   const overview: MerchantOverview = overviewResult.value;
   const audit: AuditEvent[] =
     auditResult.status === "fulfilled" ? auditResult.value : [];
+  // Fail open for the UI only if the auxiliary readiness read is unavailable:
+  // the backend detector itself still enforces Task 21B's no-replay rule.
+  const detectionReady =
+    readinessResult.status === "fulfilled" ? readinessResult.value.ready : true;
 
   return (
     <>
@@ -52,7 +61,11 @@ export default async function OverviewPage() {
         subtitle="Revenue optimization · Historical payment analysis"
         meta={`${formatInt(overview.metrics.attempts)} payment attempts`}
       />
-      <OverviewView initialOverview={overview} initialAudit={audit} />
+      <OverviewView
+        initialOverview={overview}
+        initialAudit={audit}
+        initialDetectionReady={detectionReady}
+      />
     </>
   );
 }

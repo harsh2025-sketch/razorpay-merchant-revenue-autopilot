@@ -12,13 +12,28 @@ function jsonResponse(payload: unknown) {
 }
 
 const audit = [makeAuditEvent()];
+const consumedReadiness = {
+  merchant_id: "merchant_techbazaar",
+  ready: false,
+  reason: "WAITING_FOR_NEW_DATA",
+  latest_opportunity_at: "2026-08-30T00:00:00Z",
+  latest_data_append_at: null,
+};
+
+const readyReadiness = {
+  merchant_id: "merchant_techbazaar",
+  ready: true,
+  reason: "INITIAL_DATA",
+  latest_opportunity_at: null,
+  latest_data_append_at: null,
+};
 
 afterEach(() => {
   vi.unstubAllGlobals();
 });
 
 describe("repeatable optimization cycles", () => {
-  it("starts a new cycle from a completed cycle without advancing the old one", async () => {
+  it("starts another already-detected opportunity without advancing the old cycle", async () => {
     const completed = makeOverview({
       active_opportunity_count: 1,
       active_experiment_count: 0,
@@ -56,13 +71,24 @@ describe("repeatable optimization cycles", () => {
       if (url.includes("/autopilot/new-cycle")) {
         return Promise.resolve(jsonResponse(next));
       }
+      if (url.includes("/detection-readiness")) {
+        // The new focus can legitimately come from the same already-consumed
+        // detector pass. Readiness being false must not hide non-detector work.
+        return Promise.resolve(jsonResponse(consumedReadiness));
+      }
       if (url.includes("/overview")) return Promise.resolve(jsonResponse(fresh));
       if (url.includes("/audit")) return Promise.resolve(jsonResponse(audit));
       return Promise.reject(new Error(`unexpected fetch ${url}`));
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    render(<OverviewView initialOverview={completed} initialAudit={audit} />);
+    render(
+      <OverviewView
+        initialOverview={completed}
+        initialAudit={audit}
+        initialDetectionReady={false}
+      />,
+    );
 
     await userEvent.click(
       screen.getByRole("button", { name: /Start New Optimization Cycle/i }),
@@ -114,13 +140,22 @@ describe("repeatable optimization cycles", () => {
           }),
         );
       }
+      if (url.includes("/detection-readiness")) {
+        return Promise.resolve(jsonResponse(readyReadiness));
+      }
       if (url.includes("/overview")) return Promise.resolve(jsonResponse(approved));
       if (url.includes("/audit")) return Promise.resolve(jsonResponse(audit));
       return Promise.reject(new Error(`unexpected fetch ${url}`));
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    render(<OverviewView initialOverview={approved} initialAudit={audit} />);
+    render(
+      <OverviewView
+        initialOverview={approved}
+        initialAudit={audit}
+        initialDetectionReady
+      />,
+    );
 
     await userEvent.click(
       screen.getByRole("button", { name: "Deploy Treatment" }),

@@ -9,6 +9,7 @@ or advancing lifecycle state.
 
 from __future__ import annotations
 
+import hashlib
 import os
 import sys
 from collections.abc import Iterable, Sequence
@@ -64,8 +65,6 @@ def _create_tables(db: Session | None) -> None:
     if db is None:
         create_db_and_tables()
         return
-    # Import models through this module so Base.metadata is fully populated,
-    # then create only missing tables on the injected connection.
     Base.metadata.create_all(bind=db.get_bind())
 
 
@@ -140,11 +139,29 @@ def _existing_payment_attempt_ids(db: Session, ids: Sequence[str]) -> set[str]:
     return existing
 
 
+def _cleanup_task21b_revision_markers(db: Session, merchant_id: str) -> None:
+    """Delete only this merchant's Task 21B internal revision markers.
+
+    Task 21B hashes the merchant scope before embedding it in generic operation
+    ledger keys. Reproducing that deterministic prefix here keeps destructive
+    demo reset tenant-scoped without importing product services into the seed
+    script or deleting another merchant's append/detection history.
+    """
+    scope = hashlib.sha256(merchant_id.encode("utf-8")).hexdigest()
+    for marker in ("data_append", "detection_pass"):
+        prefix = f"merchant:{scope}:{marker}:"
+        db.query(OperationExecution).filter(
+            OperationExecution.operation_key.like(prefix + "%")
+        ).delete(synchronize_session=False)
+
+
 def cleanup_merchant_data(db: Session, merchant_id: str = "merchant_techbazaar") -> None:
     """Safely delete all existing demo records for the merchant in FK-safe order.
 
     This is intentionally destructive and is used only by ``seed_demo`` /
-    ``reset_demo``. Production bootstrap never calls it.
+    ``reset_demo``. Production bootstrap never calls it. Task 21B revision and
+    detector-pass markers are deleted too so the replacement baseline starts as
+    a genuinely unconsumed historical revision.
     """
     db.query(PaymentAttempt).filter(PaymentAttempt.merchant_id == merchant_id).delete(
         synchronize_session=False
@@ -171,6 +188,8 @@ def cleanup_merchant_data(db: Session, merchant_id: str = "merchant_techbazaar")
             db.query(OperationExecution).filter(
                 OperationExecution.operation_key.like(f"experiment:{exp_id}:%")
             ).delete(synchronize_session=False)
+
+    _cleanup_task21b_revision_markers(db, merchant_id)
 
     db.query(Experiment).filter(Experiment.merchant_id == merchant_id).delete(
         synchronize_session=False

@@ -1,4 +1,10 @@
-"""Regression tests for explicit repeatable Autopilot cycle rollover."""
+"""Regression tests for explicit repeatable Autopilot cycle rollover.
+
+Task 21B changes the repeatability contract: an already-detected opportunity
+from the same observation pass may still be consumed, but once that pass is
+exhausted the detector must wait for a durable data append before scanning
+again.
+"""
 
 from __future__ import annotations
 
@@ -44,7 +50,7 @@ def _audit_opportunity(db, opportunity: Opportunity) -> None:
     )
 
 
-def test_completed_cycle_rolls_forward_without_deleting_history(db_session):
+def test_completed_cycle_closes_without_replaying_unchanged_history(db_session):
     make_merchant(db_session)
     seed_baseline(db_session)
     old_opportunity = make_opportunity(db_session)
@@ -53,13 +59,11 @@ def test_completed_cycle_rolls_forward_without_deleting_history(db_session):
         db_session, opportunity=old_opportunity, status="completed"
     )
     old_result = add_result(db_session, old_experiment, decision="KEEP")
+    before_count = db_session.query(Opportunity).count()
 
     next_opportunity = start_new_cycle(db_session, MERCHANT)
 
-    assert next_opportunity is not None
-    assert next_opportunity.id != old_opportunity.id
-    assert next_opportunity.status in autopilot.ACTIVE_OPPORTUNITY_STATUSES
-
+    assert next_opportunity is None
     db_session.expire_all()
     persisted_old = db_session.get(Opportunity, old_opportunity.id)
     persisted_experiment = db_session.get(Experiment, old_experiment.id)
@@ -67,16 +71,12 @@ def test_completed_cycle_rolls_forward_without_deleting_history(db_session):
     assert persisted_old is not None and persisted_old.status == "resolved"
     assert persisted_experiment is not None and persisted_experiment.status == "completed"
     assert persisted_result is not None and persisted_result.decision == "KEEP"
-    assert db_session.query(Opportunity).count() >= 2
-    assert db_session.query(AuditEvent).count() >= 2
+    assert db_session.query(Opportunity).count() == before_count
+    assert db_session.query(AuditEvent).count() == 1
     assert verify_merchant_audit_chain(db_session, MERCHANT) is True
 
-    transition = autopilot.resolve_transition(db_session, MERCHANT)
-    assert transition.opportunity is None or transition.opportunity.id != old_opportunity.id
-    assert transition.action != autopilot.ACTION_DONE
 
-
-def test_policy_rejected_cycle_can_start_another_cycle(db_session):
+def test_policy_rejected_cycle_closes_and_waits_for_new_data(db_session):
     make_merchant(db_session)
     seed_baseline(db_session)
     old_opportunity = make_opportunity(db_session)
@@ -94,13 +94,13 @@ def test_policy_rejected_cycle_can_start_another_cycle(db_session):
 
     next_opportunity = start_new_cycle(db_session, MERCHANT)
 
+    assert next_opportunity is None
     assert db_session.get(Opportunity, old_opportunity.id).status == "resolved"
     assert db_session.get(Experiment, old_experiment.id).status == "rejected"
-    assert next_opportunity is not None
-    assert next_opportunity.id != old_opportunity.id
+    assert db_session.query(Opportunity).count() == 1
 
 
-def test_approved_undeployed_cycle_is_cancelled_before_rollover(db_session):
+def test_approved_undeployed_cycle_is_cancelled_then_waits_for_new_data(db_session):
     make_merchant(db_session)
     seed_baseline(db_session)
     old_opportunity = make_opportunity(db_session)
@@ -121,8 +121,7 @@ def test_approved_undeployed_cycle_is_cancelled_before_rollover(db_session):
     assert persisted.status == "cancelled"
     assert persisted.ended_at is not None
     assert db_session.get(Opportunity, old_opportunity.id).status == "resolved"
-    assert next_opportunity is not None
-    assert next_opportunity.id != old_opportunity.id
+    assert next_opportunity is None
     assert autopilot.autopilot_status(db_session, MERCHANT)["active_experiment_count"] == 0
 
 
@@ -142,7 +141,7 @@ def test_deployed_running_cycle_cannot_be_skipped(db_session):
     assert db_session.get(Experiment, old_experiment.id).status == "running"
 
 
-def test_rollover_prefers_another_existing_detected_opportunity(db_session):
+def test_rollover_prefers_another_existing_opportunity_from_same_pass(db_session):
     make_merchant(db_session)
     old_opportunity = make_opportunity(db_session, severity=0.09)
     old_experiment = make_experiment(

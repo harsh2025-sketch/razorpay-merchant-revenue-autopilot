@@ -5,6 +5,11 @@ import type {
   OnboardedMerchant,
 } from "./onboarding-types";
 import type {
+  DemoPeriodResult,
+  DetectionReadiness,
+  IncrementalCsvResult,
+} from "./data-types";
+import type {
   AuditEvent,
   AutopilotStep,
   AutopilotCycle,
@@ -19,11 +24,6 @@ import type {
  * Centralized API access. Every backend call in the dashboard goes through
  * here so error parsing, the base URL and the envelope shape stay in one
  * place. Native fetch only - no axios, no react-query.
- *
- * The API maps domain failures onto a deterministic envelope:
- *   { "detail": { "code": "...", "message": "..." } }
- * Anything else (network failure, non-JSON body) becomes a safe ApiError -
- * raw objects, stack traces and exception class names are never surfaced.
  */
 
 export class ApiError extends Error {
@@ -123,8 +123,14 @@ export function getOnboardingDataStatus(
   return request<MerchantDataStatus>(API_PATHS.onboardingDataStatus(merchantId));
 }
 
+export function getDetectionReadiness(
+  merchantId: string,
+): Promise<DetectionReadiness> {
+  return request<DetectionReadiness>(API_PATHS.detectionReadiness(merchantId));
+}
+
 // ---------------------------------------------------------------------------
-// Mutations
+// Merchant registration / data mutations
 // ---------------------------------------------------------------------------
 
 export function onboardMerchantWithCsv(input: {
@@ -149,6 +155,26 @@ export function onboardMerchantWithCsv(input: {
   });
 }
 
+export function appendMerchantCsv(
+  merchantId: string,
+  file: File,
+): Promise<IncrementalCsvResult> {
+  const body = new FormData();
+  body.set("file", file);
+  return request<IncrementalCsvResult>(API_PATHS.appendMerchantCsv(merchantId), {
+    method: "POST",
+    body,
+  });
+}
+
+export function appendDemoPeriod(): Promise<DemoPeriodResult> {
+  return request<DemoPeriodResult>(API_PATHS.appendDemoPeriod, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({}),
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Lifecycle mutations - one user action, exactly one backend transition
 // ---------------------------------------------------------------------------
@@ -163,8 +189,9 @@ export function advanceAutopilot(merchantId: string): Promise<AutopilotStep> {
 
 /**
  * Close a terminal optimization cycle while preserving all historical rows,
- * then return the next persisted opportunity to drive (or null if the current
- * merchant data has no opportunity above the detector threshold).
+ * then return the next persisted opportunity to drive. Task 21B may return
+ * null when the prior observation pass is exhausted and no new data has been
+ * appended yet.
  */
 export function startNewAutopilotCycle(
   merchantId: string,

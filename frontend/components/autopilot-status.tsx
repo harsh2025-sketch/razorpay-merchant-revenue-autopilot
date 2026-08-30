@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, RotateCcw } from "lucide-react";
+import { ArrowRight, Database, RotateCcw } from "lucide-react";
 import { ACTION_ACTORS, autopilotStatusSentence } from "@/lib/labels";
 import type {
   AutopilotNextAction,
@@ -12,15 +12,12 @@ import { AutopilotActorStrip } from "./autopilot-actor-strip";
 import { LoadingButton } from "./loading-button";
 import { PrimaryAutopilotAction } from "./primary-autopilot-action";
 
-/**
- * The Overview hero: one clean bordered surface with the autopilot state
- * sentence, the next responsible actor, the single primary action and the
- * compact actor strip. Not a marketing hero.
- */
+/** Overview Autopilot status surface. */
 export function AutopilotStatus({
   state,
   nextAction,
   latestDecision,
+  waitingForData = false,
   loading = false,
   restartLoading = false,
   restartAvailable = false,
@@ -32,6 +29,7 @@ export function AutopilotStatus({
   state: AutopilotState;
   nextAction: AutopilotNextAction | null;
   latestDecision: StatisticalDecision | null;
+  waitingForData?: boolean;
   loading?: boolean;
   restartLoading?: boolean;
   restartAvailable?: boolean;
@@ -40,14 +38,16 @@ export function AutopilotStatus({
   onAction?: () => void;
   onStartNewCycle?: () => void;
 }) {
-  const sentence = autopilotStatusSentence(state, latestDecision);
+  const sentence = waitingForData
+    ? "The current evidence revision is exhausted. Add new payment data before another optimization scan."
+    : autopilotStatusSentence(state, latestDecision);
   const actor = nextAction ? ACTION_ACTORS[nextAction] : null;
   const terminalCycle = nextAction === "DONE" || nextAction === "STOP";
   const undeployedCycle =
     restartAvailable ||
     nextAction === "CONFIGURE_OFFER_MAPPING" ||
     nextAction === "DEPLOY_TREATMENT";
-  const canStartNewCycle = terminalCycle || undeployedCycle;
+  const canStartNewCycle = !waitingForData && (terminalCycle || undeployedCycle);
 
   return (
     <section
@@ -63,7 +63,9 @@ export function AutopilotStatus({
             {sentence}
           </p>
           <p className="mt-1.5 text-[13px] text-gray-500">
-            {actor ? (
+            {waitingForData ? (
+              "Historical transactions are preserved, but they will not be replayed as new evidence."
+            ) : actor ? (
               <>
                 Next step · <span className="font-medium text-gray-700">{actor}</span>
                 {undeployedCycle && (
@@ -85,11 +87,21 @@ export function AutopilotStatus({
           )}
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-3">
-          <PrimaryAutopilotAction
-            action={nextAction}
-            loading={loading}
-            onAction={onAction}
-          />
+          {waitingForData ? (
+            <Link
+              href="/data"
+              className="inline-flex items-center gap-1.5 rounded-md border border-indigo-600 bg-indigo-600 px-3.5 py-2 text-[13px] font-medium text-white hover:bg-indigo-700"
+            >
+              <Database size={13} aria-hidden />
+              Add New Data
+            </Link>
+          ) : (
+            <PrimaryAutopilotAction
+              action={nextAction}
+              loading={loading}
+              onAction={onAction}
+            />
+          )}
           {canStartNewCycle && onStartNewCycle && (
             <LoadingButton
               loading={restartLoading}

@@ -1,37 +1,30 @@
 """Opportunity detector - segment conversion divergence.
 
-Detects underperforming segments by comparing a segment vs all other segments combined.
-Uses only observable PaymentAttempt data. No access to sealed evaluation model.
+Detects underperforming segments by comparing a segment vs all other segments
+combined. Task 21B makes the evidence boundary explicit: opportunity detection
+uses historical merchant observations only (``experiment_id IS NULL``), never
+simulated experiment traffic, and each historical revision is analyzed at most
+once.
 """
 
 from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from typing import List, Dict
+from typing import Dict, List
 
-from sqlalchemy import func, case
+from sqlalchemy import case, func
 from sqlalchemy.orm import Session
 
-from app.db.models import PaymentAttempt, Opportunity
+from app.db.models import Opportunity, PaymentAttempt
 from app.services.audit import (
     ACTOR_DETECTOR,
     ENTITY_OPPORTUNITY,
     OPPORTUNITY_DETECTED,
     record_audit_event_once,
 )
+from app.services.incremental_data import detection_readiness, record_detection_pass
 
-# We may use metric helpers for evidence, but not required.
-# Importing metrics is allowed (they are observable).
-from app.engines.metrics import (
-    get_payment_method_metrics,
-    get_failure_reason_counts,
-)
-
-
-# ---------------------------------------------------------------------------
-# Public detected type
-# ---------------------------------------------------------------------------
 
 @dataclass(frozen=True)
 class DetectedOpportunity:
@@ -47,31 +40,77 @@ class DetectedOpportunity:
     evidence: dict
 
 
-# ---------------------------------------------------------------------------
-# Severity
-# ---------------------------------------------------------------------------
-
-def _compute_severity(absolute_gap: float, segment_attempts: int, total_attempts: int) -> float:
-    """Deterministic severity: absolute_gap * sqrt(segment_attempts / total_attempts)
-
-    Documented and bounded between 0 and 1.
-    """
+def _compute_severity(
+    absolute_gap: float,
+    segment_attempts: int,
+    total_attempts: int,
+) -> float:
+    """Deterministic bounded severity: gap * sqrt(segment share)."""
     if total_attempts <= 0 or segment_attempts <= 0:
         return 0.0
-    ratio = segment_attempts / total_attempts
-    # ratio in [0,1], sqrt in [0,1]
-    raw = absolute_gap * math.sqrt(ratio)
-    # Clamp to [0,1]
-    if raw < 0.0:
-        return 0.0
-    if raw > 1.0:
-        return 1.0
-    return raw
+    raw = absolute_gap * math.sqrt(segment_attempts / total_attempts)
+    return min(1.0, max(0.0, raw))
 
 
-# ---------------------------------------------------------------------------
-# Detection
-# ---------------------------------------------------------------------------
+def _historical_payment_method_metrics(
+    db: Session,
+    merchant_id: str,
+    *,
+    segment: str,
+) -> Dict[str, dict]:
+    rows = (
+        db.query(
+            PaymentAttempt.payment_method,
+            func.count(PaymentAttempt.id).label("attempts"),
+            func.sum(case((PaymentAttempt.status == "captured", 1), else_=0)).label(
+                "captured"
+            ),
+            func.sum(case((PaymentAttempt.status == "failed", 1), else_=0)).label(
+                "failed"
+            ),
+            func.sum(case((PaymentAttempt.status == "abandoned", 1), else_=0)).label(
+                "abandoned"
+            ),
+        )
+        .filter(PaymentAttempt.merchant_id == merchant_id)
+        .filter(PaymentAttempt.experiment_id.is_(None))
+        .filter(PaymentAttempt.segment == segment)
+        .filter(PaymentAttempt.payment_method.is_not(None))
+        .group_by(PaymentAttempt.payment_method)
+        .all()
+    )
+    evidence: Dict[str, dict] = {}
+    for payment_method, attempts, captured, failed, abandoned in rows:
+        attempts_i = int(attempts or 0)
+        captured_i = int(captured or 0)
+        evidence[payment_method] = {
+            "attempts": attempts_i,
+            "captured": captured_i,
+            "failed": int(failed or 0),
+            "abandoned": int(abandoned or 0),
+            "success_rate": captured_i / attempts_i if attempts_i > 0 else None,
+        }
+    return dict(sorted(evidence.items()))
+
+
+def _historical_failure_reason_counts(
+    db: Session,
+    merchant_id: str,
+    *,
+    segment: str,
+) -> Dict[str, int]:
+    rows = (
+        db.query(PaymentAttempt.failure_reason, func.count(PaymentAttempt.id))
+        .filter(PaymentAttempt.merchant_id == merchant_id)
+        .filter(PaymentAttempt.experiment_id.is_(None))
+        .filter(PaymentAttempt.segment == segment)
+        .filter(PaymentAttempt.status == "failed")
+        .filter(PaymentAttempt.failure_reason.is_not(None))
+        .group_by(PaymentAttempt.failure_reason)
+        .all()
+    )
+    return {reason: int(count or 0) for reason, count in sorted(rows)}
+
 
 def detect_segment_conversion_opportunities(
     db: Session,
@@ -81,34 +120,29 @@ def detect_segment_conversion_opportunities(
     min_absolute_gap: float = 0.08,
     max_results: int = 3,
 ) -> List[DetectedOpportunity]:
-    """Detect underperforming segments vs complement baseline.
-
-    - Compares each segment against all other segments combined.
-    - Only underperforming (comparison_rate - segment_rate > 0) are considered.
-    - Skips segments with insufficient data or gap below threshold.
-    - Returns sorted by severity descending, tie-break by segment name.
-    """
-    # Aggregate per segment: attempts, captured
+    """Detect underperforming historical segments vs their complement."""
     rows = (
         db.query(
             PaymentAttempt.segment,
             func.count(PaymentAttempt.id).label("attempts"),
-            func.sum(case((PaymentAttempt.status == "captured", 1), else_=0)).label("captured"),
+            func.sum(case((PaymentAttempt.status == "captured", 1), else_=0)).label(
+                "captured"
+            ),
         )
         .filter(PaymentAttempt.merchant_id == merchant_id)
+        .filter(PaymentAttempt.experiment_id.is_(None))
         .filter(PaymentAttempt.segment.is_not(None))
         .group_by(PaymentAttempt.segment)
         .all()
     )
 
-    # Build maps
-    segment_stats: Dict[str, tuple[int, int]] = {}  # segment -> (attempts, captured)
+    segment_stats: Dict[str, tuple[int, int]] = {}
     total_attempts = 0
     total_captured = 0
-    for seg, attempts, captured in rows:
+    for segment, attempts, captured in rows:
         attempts_i = int(attempts or 0)
         captured_i = int(captured or 0)
-        segment_stats[seg] = (attempts_i, captured_i)
+        segment_stats[segment] = (attempts_i, captured_i)
         total_attempts += attempts_i
         total_captured += captured_i
 
@@ -116,95 +150,76 @@ def detect_segment_conversion_opportunities(
         return []
 
     detected: List[DetectedOpportunity] = []
-
-    for segment, (seg_attempts, seg_captured) in segment_stats.items():
-        # Minimum data rules
-        if seg_attempts < min_segment_attempts:
+    for segment, (segment_attempts, segment_captured) in segment_stats.items():
+        if segment_attempts < min_segment_attempts:
             continue
 
-        comp_attempts = total_attempts - seg_attempts
-        comp_captured = total_captured - seg_captured
-
-        if comp_attempts < min_segment_attempts:
+        comparison_attempts = total_attempts - segment_attempts
+        comparison_captured = total_captured - segment_captured
+        if comparison_attempts < min_segment_attempts:
+            continue
+        if segment_attempts == 0 or comparison_attempts == 0:
             continue
 
-        if seg_attempts == 0 or comp_attempts == 0:
+        segment_rate = segment_captured / segment_attempts
+        comparison_rate = comparison_captured / comparison_attempts
+        gap = comparison_rate - segment_rate
+        if gap <= 0 or gap < min_absolute_gap:
             continue
 
-        seg_rate = seg_captured / seg_attempts if seg_attempts > 0 else None
-        comp_rate = comp_captured / comp_attempts if comp_attempts > 0 else None
-
-        if seg_rate is None or comp_rate is None:
-            continue
-
-        # Direction: only underperforming
-        gap = comp_rate - seg_rate
-        if gap <= 0:
-            continue
-
-        if gap < min_absolute_gap:
-            continue
-
-        severity = _compute_severity(gap, seg_attempts, total_attempts)
-
-        # Build observable evidence
-        # Payment method metrics for target segment
-        pm_metrics = get_payment_method_metrics(db, merchant_id, segment=segment)
-        pm_evidence: Dict[str, dict] = {}
-        for pm in pm_metrics:
-            pm_evidence[pm.payment_method] = {
-                "attempts": pm.attempts,
-                "captured": pm.captured,
-                "failed": pm.failed,
-                "abandoned": pm.abandoned,
-                "success_rate": pm.success_rate,
-            }
-
-        failure_counts = get_failure_reason_counts(db, merchant_id, segment=segment)
-
+        severity = _compute_severity(gap, segment_attempts, total_attempts)
         evidence = {
             "segment": segment,
-            "segment_attempts": seg_attempts,
-            "segment_captured": seg_captured,
-            "segment_conversion_rate": seg_rate,
-            "comparison_attempts": comp_attempts,
-            "comparison_captured": comp_captured,
-            "comparison_conversion_rate": comp_rate,
+            "segment_attempts": segment_attempts,
+            "segment_captured": segment_captured,
+            "segment_conversion_rate": segment_rate,
+            "comparison_attempts": comparison_attempts,
+            "comparison_captured": comparison_captured,
+            "comparison_conversion_rate": comparison_rate,
             "absolute_gap": gap,
-            "payment_method_metrics": pm_evidence,
-            "failure_reasons": failure_counts,
+            "payment_method_metrics": _historical_payment_method_metrics(
+                db, merchant_id, segment=segment
+            ),
+            "failure_reasons": _historical_failure_reason_counts(
+                db, merchant_id, segment=segment
+            ),
         }
-
         detected.append(
             DetectedOpportunity(
                 segment=segment,
-                segment_attempts=seg_attempts,
-                segment_captured=seg_captured,
-                segment_conversion_rate=seg_rate,
-                comparison_attempts=comp_attempts,
-                comparison_captured=comp_captured,
-                comparison_conversion_rate=comp_rate,
+                segment_attempts=segment_attempts,
+                segment_captured=segment_captured,
+                segment_conversion_rate=segment_rate,
+                comparison_attempts=comparison_attempts,
+                comparison_captured=comparison_captured,
+                comparison_conversion_rate=comparison_rate,
                 absolute_gap=gap,
                 severity=severity,
                 evidence=evidence,
             )
         )
 
-    # Sort by severity descending, tie-break by segment name deterministically
-    detected.sort(key=lambda d: (-d.severity, d.segment))
-
-    # Enforce max_results
+    detected.sort(key=lambda row: (-row.severity, row.segment))
     if max_results is not None and max_results >= 0:
         detected = detected[:max_results]
-
     return detected
 
 
-# ---------------------------------------------------------------------------
-# Persistence
-# ---------------------------------------------------------------------------
-
 ACTIVE_STATUSES = {"detected", "investigating"}
+
+
+def _active_opportunities(db: Session, merchant_id: str) -> list[Opportunity]:
+    return list(
+        db.query(Opportunity)
+        .filter(Opportunity.merchant_id == merchant_id)
+        .filter(Opportunity.status.in_(list(ACTIVE_STATUSES)))
+        .order_by(
+            Opportunity.severity.desc(),
+            Opportunity.created_at.desc(),
+            Opportunity.id.asc(),
+        )
+        .all()
+    )
 
 
 def persist_detected_opportunities(
@@ -212,60 +227,49 @@ def persist_detected_opportunities(
     merchant_id: str,
     detected: List[DetectedOpportunity],
 ) -> List[Opportunity]:
-    """Persist detected opportunities, suppressing duplicate active ones.
-
-    - If an existing Opportunity exists with same merchant_id, type,
-      segment, and status in active set, return existing without creating duplicate.
-    - Otherwise create new Opportunity record.
-    - Flushes but does not commit; caller may commit.
-    """
+    """Persist detected opportunities, suppressing duplicate active ones."""
     persisted: List[Opportunity] = []
-
-    for det in detected:
-        # Check for existing active opportunity
+    for item in detected:
         existing = (
             db.query(Opportunity)
             .filter(Opportunity.merchant_id == merchant_id)
             .filter(Opportunity.type == "segment_conversion_divergence")
-            .filter(Opportunity.segment == det.segment)
+            .filter(Opportunity.segment == item.segment)
             .filter(Opportunity.status.in_(list(ACTIVE_STATUSES)))
             .order_by(Opportunity.created_at.desc())
             .first()
         )
-
         if existing is not None:
             persisted.append(existing)
             continue
 
-        opp = Opportunity(
+        opportunity = Opportunity(
             merchant_id=merchant_id,
             type="segment_conversion_divergence",
-            segment=det.segment,
-            severity=det.severity,
+            segment=item.segment,
+            severity=item.severity,
             detected_metric="conversion_rate",
-            detected_value=det.segment_conversion_rate,
-            baseline_value=det.comparison_conversion_rate,
-            evidence=det.evidence,
+            detected_value=item.segment_conversion_rate,
+            baseline_value=item.comparison_conversion_rate,
+            evidence=item.evidence,
             status="detected",
         )
-        db.add(opp)
-        # Flush to get ID and make it visible for subsequent duplicate checks in same batch
+        db.add(opportunity)
         db.flush()
         record_audit_event_once(
             db,
             merchant_id=merchant_id,
             event_type=OPPORTUNITY_DETECTED,
             entity_type=ENTITY_OPPORTUNITY,
-            entity_id=opp.id,
+            entity_id=opportunity.id,
             data={
-                "type": opp.type,
-                "segment": opp.segment,
-                "severity": opp.severity,
+                "type": opportunity.type,
+                "segment": opportunity.segment,
+                "severity": opportunity.severity,
             },
             actor=ACTOR_DETECTOR,
         )
-        persisted.append(opp)
-
+        persisted.append(opportunity)
     return persisted
 
 
@@ -277,10 +281,22 @@ def run_opportunity_detection(
     min_absolute_gap: float = 0.08,
     max_results: int = 3,
 ) -> List[Opportunity]:
-    """Convenience: detect and persist.
+    """Detect and persist at most once per historical observation revision.
 
-    Does not commit; caller may commit. Flushes via persist helper.
+    Existing active opportunities are returned idempotently without rescanning
+    the dataset. Once an observation revision is actually analyzed, a durable
+    detector-pass marker is written even when zero opportunities are found.
+    Therefore repeated calls on unchanged evidence cannot manufacture another
+    fresh detector pass.
     """
+    active = _active_opportunities(db, merchant_id)
+    if active:
+        return active
+
+    readiness = detection_readiness(db, merchant_id)
+    if not readiness.ready:
+        return []
+
     detected = detect_segment_conversion_opportunities(
         db,
         merchant_id,
@@ -289,4 +305,9 @@ def run_opportunity_detection(
         max_results=max_results,
     )
     persisted = persist_detected_opportunities(db, merchant_id, detected)
+    record_detection_pass(
+        db,
+        merchant_id,
+        opportunity_count=len(persisted),
+    )
     return persisted
