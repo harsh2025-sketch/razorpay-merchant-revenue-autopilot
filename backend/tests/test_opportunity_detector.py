@@ -437,11 +437,13 @@ def test_previously_resolved_opportunity_may_allow_new_one(temp_db_session):
     db.commit()
     assert len(persisted) == 1
     opp = persisted[0]
+
     # Mark as resolved
     opp.status = "resolved"
     db.commit()
 
-    # Now new detection should allow creating a new opportunity
+    # The low-level detector can still recompute a fresh result if explicitly
+    # called; Task 21B's revision gate lives in run_opportunity_detection.
     detected2 = detect_segment_conversion_opportunities(db, "m1", min_segment_attempts=50, min_absolute_gap=0.05, max_results=5)
     persisted2 = persist_detected_opportunities(db, "m1", detected2)
     db.commit()
@@ -494,14 +496,13 @@ def test_no_hidden_causal_import_reference():
 
 
 def test_canonical_techbazaar_seeded_baseline_yields_opportunity(tmp_path):
-    """Use Task 05 seed logic against temporary SQLite DB and verify at least one opportunity."""
+    """Use Task 05 seed logic and verify one historical revision is not replayed."""
     from sqlalchemy import create_engine, event
     from sqlalchemy.orm import sessionmaker
     from app.db.base import Base
     import sys
     from pathlib import Path
 
-    # Import seed_demo helper
     scripts_dir = Path(__file__).resolve().parent.parent.parent / "scripts"
     if str(scripts_dir) not in sys.path:
         sys.path.insert(0, str(scripts_dir))
@@ -522,8 +523,7 @@ def test_canonical_techbazaar_seeded_baseline_yields_opportunity(tmp_path):
     session = SessionLocal()
 
     try:
-        summary = seed_demo(db=session, seed=20260827)
-        # Run detector
+        seed_demo(db=session, seed=20260827)
         detected = detect_segment_conversion_opportunities(
             session,
             merchant_id="merchant_techbazaar",
@@ -533,33 +533,30 @@ def test_canonical_techbazaar_seeded_baseline_yields_opportunity(tmp_path):
         )
         assert len(detected) >= 1, "Expected at least one opportunity in canonical baseline"
 
-        # All detected evidence is based only on PaymentAttempt data
         for d in detected:
             assert d.segment in {"android_mid", "android_budget", "web_general", "repeat_buyer", "ios_premium"}
             assert d.absolute_gap >= 0.08
-            # Evidence checks
             ev = d.evidence
             assert "segment_attempts" in ev
             assert "payment_method_metrics" in ev
             assert "failure_reasons" in ev
-            # No hard-coded segment required, but ensure evidence is observable
-            ev_str = str(ev).lower()
-            assert "expected_lift" not in ev_str
+            assert "expected_lift" not in str(ev).lower()
 
-        # Test persistence
-        persisted = persist_detected_opportunities(session, "merchant_techbazaar", detected)
+        # Use the orchestrated helper once so the detector-pass marker is
+        # established for this exact historical revision.
+        persisted = run_opportunity_detection(session, "merchant_techbazaar")
         session.commit()
         assert len(persisted) >= 1
 
-        # Verify run_opportunity_detection convenience
-        # Reset status to resolved to test re-detection
         for opp in persisted:
             opp.status = "resolved"
         session.commit()
 
+        # Task 21B invariant: unchanged historical evidence is consumed and
+        # cannot be manufactured into another fresh opportunity pass.
         opps_via_run = run_opportunity_detection(session, "merchant_techbazaar")
         session.commit()
-        assert len(opps_via_run) >= 1
+        assert opps_via_run == []
 
     finally:
         session.close()
