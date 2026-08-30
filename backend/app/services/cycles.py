@@ -2,15 +2,12 @@
 
 A completed, rejected, or safely abandoned pre-deployment cycle remains fully
 persisted. Starting another cycle never deletes payment attempts, experiments,
-results, resources, or audit history. Instead this module closes the current
-opportunity, cancels an approved experiment only when no treatment resource was
-created, then resumes another already-detected opportunity or runs the existing
-deterministic detector again.
+results, resources, or audit history.
 
-This is deliberately separate from ``app.services.autopilot`` so the audited
-one-step orchestration and all Tasks 07-15 decision boundaries remain unchanged.
-The existing append-only audit chain is never rewritten or truncated by a
-rollover; fresh detector/lifecycle events continue extending it normally.
+Task 21B adds one crucial product invariant: once every opportunity from an
+observation pass has been consumed, Autopilot may not run the detector again
+until a successful data-append revision exists after that pass. This prevents
+unchanged historical data from being replayed as if it were new evidence.
 """
 
 from __future__ import annotations
@@ -23,6 +20,7 @@ from sqlalchemy.orm import Session
 from app.db.models import Experiment, Opportunity
 from app.engines.opportunities import run_opportunity_detection
 from app.services import autopilot
+from app.services.incremental_data import has_new_data_since
 
 
 RESTARTABLE_ACTIONS = frozenset(
@@ -36,13 +34,7 @@ RESTARTABLE_ACTIONS = frozenset(
 
 
 def _is_restartable(db: Session, transition: Any) -> bool:
-    """Return whether closing the current cycle is safe.
-
-    ``DONE`` is accepted only for a genuinely terminal experiment. ``DEPLOY``
-    is accepted only before any treatment resource exists, which covers the
-    durable state left after a fail-closed deployment-blocked attempt. Runtime,
-    evaluation, and rollback states can never be skipped.
-    """
+    """Return whether closing the current cycle is safe."""
     if transition.action in {autopilot.ACTION_STOP, autopilot.ACTION_BLOCKED}:
         return True
     if transition.action == autopilot.ACTION_DEPLOY:
@@ -62,13 +54,7 @@ def _cancel_undeployed_experiment(
     db: Session,
     experiment: Experiment | None,
 ) -> None:
-    """Close an approved experiment that never created a treatment resource.
-
-    Leaving such an experiment ``approved`` would make it count as concurrently
-    active forever. An explicit user-requested rollover therefore marks it
-    ``cancelled``. No Razorpay cancellation is attempted because the caller is
-    allowed here only when no treatment resource exists.
-    """
+    """Close an approved experiment that never created a treatment resource."""
     if experiment is None:
         return
     if experiment.status not in autopilot.DEPLOYABLE_EXPERIMENT_STATUSES:
@@ -83,29 +69,88 @@ def _cancel_undeployed_experiment(
     db.flush()
 
 
+def _latest_opportunity(db: Session, merchant_id: str) -> Opportunity | None:
+    return (
+        db.query(Opportunity)
+        .filter(Opportunity.merchant_id == merchant_id)
+        .order_by(Opportunity.created_at.desc(), Opportunity.id.desc())
+        .first()
+    )
+
+
+def _resolve_stale_active_opportunities(
+    db: Session,
+    merchant_id: str,
+    *,
+    older_than: datetime,
+) -> None:
+    """Retire waiting opportunities from an older observation pass.
+
+    If new merchant data arrived after a detector pass, its still-waiting
+    opportunities carry stale evidence. They are preserved but resolved before
+    a fresh detector pass is allowed to create updated opportunities.
+    """
+    (
+        db.query(Opportunity)
+        .filter(Opportunity.merchant_id == merchant_id)
+        .filter(Opportunity.status.in_(list(autopilot.ACTIVE_OPPORTUNITY_STATUSES)))
+        .filter(Opportunity.created_at <= older_than)
+        .update({Opportunity.status: "resolved"}, synchronize_session=False)
+    )
+    db.flush()
+
+
+def _detect_only_if_new_evidence(
+    db: Session,
+    merchant_id: str,
+    *,
+    previous_pass: Opportunity | None,
+) -> Opportunity | None:
+    """Run detection for the first pass or after a durable data append only."""
+    if previous_pass is not None and not has_new_data_since(
+        db, merchant_id, previous_pass.created_at
+    ):
+        return None
+
+    if previous_pass is not None:
+        _resolve_stale_active_opportunities(
+            db,
+            merchant_id,
+            older_than=previous_pass.created_at,
+        )
+
+    run_opportunity_detection(db, merchant_id)
+    return autopilot.focus_opportunity(db, merchant_id)
+
+
 def start_new_cycle(db: Session, merchant_id: str) -> Opportunity | None:
-    """Close the terminal/safely-undeployed focus cycle and return the next one.
+    """Close a safe cycle and return the next opportunity, if evidence permits.
 
     Rules:
     - Runtime, evaluation, and rollback work can never be skipped.
     - Completed/rejected cycles are preserved and their opportunity becomes
       ``resolved``.
-    - An approved experiment with no created treatment resource can be
-      explicitly abandoned and is marked ``cancelled`` so policy concurrency
-      stays truthful. This is the durable state seen after deployment is
-      blocked by missing/unsupported resource configuration.
-    - If another previously detected active opportunity exists, it becomes the
-      next focus without creating a duplicate.
-    - Otherwise the existing deterministic detector is run again against the
-      merchant's current observable payment data.
+    - An approved experiment with no treatment resource can be explicitly
+      abandoned and is marked ``cancelled``.
+    - Without new merchant data, another opportunity already detected in the
+      same observation pass may be used, but the detector is never run again.
+    - When new data arrived after the previous detector pass, remaining stale
+      waiting opportunities are resolved and the detector runs once against
+      the updated merchant state.
+    - The first-ever detector pass is always allowed.
     - Nothing commits here; the API boundary owns the transaction.
     """
     autopilot.get_merchant(db, merchant_id)
 
     current = autopilot.focus_opportunity(db, merchant_id)
+    latest_before = _latest_opportunity(db, merchant_id)
+
     if current is None:
-        run_opportunity_detection(db, merchant_id)
-        return autopilot.focus_opportunity(db, merchant_id)
+        return _detect_only_if_new_evidence(
+            db,
+            merchant_id,
+            previous_pass=latest_before,
+        )
 
     transition = autopilot.resolve_transition(db, merchant_id)
     if transition.action not in RESTARTABLE_ACTIONS or not _is_restartable(db, transition):
@@ -119,12 +164,24 @@ def start_new_cycle(db: Session, merchant_id: str) -> Opportunity | None:
     current.status = "resolved"
     db.flush()
 
-    # Prefer another already-detected opportunity from the same observation
-    # pass before scanning again. This avoids manufacturing duplicates when
-    # the detector originally surfaced more than one valid segment.
+    # If a data append happened after this observation pass, every remaining
+    # waiting opportunity is stale. Re-detect from the updated dataset instead
+    # of driving an old snapshot.
+    if latest_before is not None and has_new_data_since(
+        db, merchant_id, latest_before.created_at
+    ):
+        _resolve_stale_active_opportunities(
+            db,
+            merchant_id,
+            older_than=latest_before.created_at,
+        )
+        run_opportunity_detection(db, merchant_id)
+        return autopilot.focus_opportunity(db, merchant_id)
+
+    # No new evidence: another opportunity from the same detector pass is
+    # legitimate, but once those are exhausted we stop instead of rescanning
+    # unchanged payment history.
     next_focus = autopilot.focus_opportunity(db, merchant_id)
     if next_focus is not None:
         return next_focus
-
-    run_opportunity_detection(db, merchant_id)
-    return autopilot.focus_opportunity(db, merchant_id)
+    return None
