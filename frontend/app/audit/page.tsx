@@ -1,5 +1,6 @@
+import { getActiveMerchantId } from "@/lib/active-merchant";
 import { getMerchantAudit, getOverview } from "@/lib/api";
-import { AUDIT_PAGE_LIMIT, MERCHANT_ID } from "@/lib/constants";
+import { AUDIT_PAGE_LIMIT } from "@/lib/constants";
 import { describeApiError } from "@/lib/errors";
 import { AuditTimeline } from "@/components/audit-timeline";
 import { IntegrityBadge } from "@/components/badges";
@@ -11,9 +12,10 @@ import type { AuditEvent } from "@/lib/types";
 export const dynamic = "force-dynamic";
 
 export default async function AuditPage() {
+  const merchantId = getActiveMerchantId();
   const [auditResult, overviewResult] = await Promise.allSettled([
-    getMerchantAudit(MERCHANT_ID, AUDIT_PAGE_LIMIT),
-    getOverview(MERCHANT_ID),
+    getMerchantAudit(merchantId, AUDIT_PAGE_LIMIT),
+    getOverview(merchantId),
   ]);
 
   if (auditResult.status === "rejected") {
@@ -24,8 +26,14 @@ export default async function AuditPage() {
           subtitle="Tamper-evident lifecycle history for Revenue Autopilot."
         />
         <InlineError error={describeApiError(auditResult.reason)} />
-        <div className="mt-4">
+        <div className="mt-4 flex items-center gap-3">
           <RetryRefresh />
+          <a
+            href="/onboarding"
+            className="rounded-md border border-gray-300 bg-white px-3 py-2 text-[13px] font-medium text-gray-700 hover:bg-gray-50"
+          >
+            Choose merchant data
+          </a>
         </div>
       </>
     );
