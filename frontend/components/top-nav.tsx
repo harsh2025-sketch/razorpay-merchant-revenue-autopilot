@@ -59,10 +59,10 @@ export function TopNav() {
             {MERCHANT_NAME}
           </span>
           <span
-            title="Razorpay Test Mode"
+            title="Hosted demo: simulated Razorpay execution boundary"
             className="inline-flex items-center rounded border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-700"
           >
-            Test Mode
+            Demo Mode
           </span>
         </div>
       </div>
