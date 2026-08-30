@@ -18,6 +18,7 @@ export function AutopilotStatus({
   nextAction,
   latestDecision,
   waitingForData = false,
+  waitingForLiveOutcomes = false,
   loading = false,
   restartLoading = false,
   restartAvailable = false,
@@ -30,6 +31,7 @@ export function AutopilotStatus({
   nextAction: AutopilotNextAction | null;
   latestDecision: StatisticalDecision | null;
   waitingForData?: boolean;
+  waitingForLiveOutcomes?: boolean;
   loading?: boolean;
   restartLoading?: boolean;
   restartAvailable?: boolean;
@@ -40,14 +42,17 @@ export function AutopilotStatus({
 }) {
   const sentence = waitingForData
     ? "The current evidence revision is exhausted. Add new payment data before another optimization scan."
-    : autopilotStatusSentence(state, latestDecision);
+    : waitingForLiveOutcomes
+      ? "Treatment is deployed. This uploaded merchant is awaiting assigned real experiment outcomes."
+      : autopilotStatusSentence(state, latestDecision);
   const actor = nextAction ? ACTION_ACTORS[nextAction] : null;
   const terminalCycle = nextAction === "DONE" || nextAction === "STOP";
   const undeployedCycle =
     restartAvailable ||
     nextAction === "CONFIGURE_OFFER_MAPPING" ||
     nextAction === "DEPLOY_TREATMENT";
-  const canStartNewCycle = !waitingForData && (terminalCycle || undeployedCycle);
+  const canStartNewCycle =
+    !waitingForData && !waitingForLiveOutcomes && (terminalCycle || undeployedCycle);
 
   return (
     <section
@@ -65,6 +70,8 @@ export function AutopilotStatus({
           <p className="mt-1.5 text-[13px] text-gray-500">
             {waitingForData ? (
               "Historical transactions are preserved, but they will not be replayed as new evidence."
+            ) : waitingForLiveOutcomes ? (
+              "No TechBazaar synthetic customer traffic will be generated for this merchant. A production payment-event integration must supply control and treatment outcomes before statistics can run."
             ) : actor ? (
               <>
                 Next step · <span className="font-medium text-gray-700">{actor}</span>
@@ -95,6 +102,13 @@ export function AutopilotStatus({
               <Database size={13} aria-hidden />
               Add New Data
             </Link>
+          ) : waitingForLiveOutcomes ? (
+            <span
+              role="status"
+              className="inline-flex items-center rounded-md border border-amber-200 bg-amber-50 px-3.5 py-2 text-[13px] font-medium text-amber-800"
+            >
+              Awaiting live outcomes
+            </span>
           ) : (
             <PrimaryAutopilotAction
               action={nextAction}
