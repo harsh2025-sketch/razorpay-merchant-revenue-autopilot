@@ -1784,6 +1784,8 @@ def test_full_api_chain_over_http(
         "EXPERIMENT_STARTED",
         "EXPERIMENT_COMPLETED",
     ]
+    if result["decision"] == "KEEP":
+        expected_experiment_events.append("TREATMENT_PROMOTED")
     if result["decision"] == "ROLLBACK":
         expected_experiment_events += [
             "RAZORPAY_RESOURCE_CANCELLED",
