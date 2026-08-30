@@ -4,13 +4,11 @@ import Link from "next/link";
 import { useCallback, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { advanceAutopilot, getCycle, getOverview, rollbackExperiment } from "@/lib/api";
-import { MERCHANT_ID } from "@/lib/constants";
 import { describeApiError, type DescribedError } from "@/lib/errors";
 import { shortId } from "@/lib/format";
 import type {
   AutopilotCycle,
   AutopilotNextAction,
-  AutopilotState,
   MerchantOverview,
   StatisticalDecision,
 } from "@/lib/types";
@@ -34,6 +32,7 @@ import {
 } from "./statistical-result";
 import { StatusBadge, type BadgeTone } from "./badges";
 import { InlineError } from "./inline-error";
+
 function cycleStatusBadge(
   cycle: AutopilotCycle,
 ): { label: string; tone: BadgeTone } {
@@ -76,6 +75,7 @@ export function CycleView({
   initialCycle: AutopilotCycle;
   initialOverview: MerchantOverview | null;
 }) {
+  const merchantId = initialCycle.opportunity.merchant_id;
   const [cycle, setCycle] = useState(initialCycle);
   const [overview, setOverview] = useState(initialOverview);
   const [actionLoading, setActionLoading] = useState(false);
@@ -94,24 +94,24 @@ export function CycleView({
   const refetch = useCallback(async () => {
     const [freshCycle, freshOverview] = await Promise.all([
       getCycle(opportunityId),
-      getOverview(MERCHANT_ID).catch(() => null),
+      getOverview(merchantId).catch(() => null),
     ]);
     setCycle(freshCycle);
     if (freshOverview) setOverview(freshOverview);
-  }, [opportunityId]);
+  }, [merchantId, opportunityId]);
 
   const handleStep = useCallback(async () => {
     setError(null);
     setActionLoading(true);
     try {
-      await advanceAutopilot(MERCHANT_ID);
+      await advanceAutopilot(merchantId);
       await refetch();
     } catch (caught) {
       setError(describeApiError(caught));
     } finally {
       setActionLoading(false);
     }
-  }, [refetch]);
+  }, [merchantId, refetch]);
 
   const handleRollback = useCallback(async () => {
     const experimentId = cycle.experiment?.id;
@@ -133,8 +133,6 @@ export function CycleView({
   const result = cycle.result;
   const decision: StatisticalDecision | null = result?.decision ?? null;
 
-  // The header action stays out of the way when the result card owns the
-  // rollback (direct endpoint) or when the action is terminal.
   const headerAction =
     nextAction === "ROLLBACK_TREATMENT" || nextAction === "STOP"
       ? null
@@ -190,13 +188,10 @@ export function CycleView({
         />
       )}
 
-      {/* 1 - deterministic observed evidence */}
       <ObservedEvidence opportunity={cycle.opportunity} />
 
-      {/* Trust boundary: everything below is AI inference / execution */}
       {cycle.hypothesis && <AIAnalysisBoundary />}
 
-      {/* 2 - AI proposal */}
       {cycle.hypothesis && (
         <AIDiagnosis
           hypothesis={cycle.hypothesis}
@@ -204,10 +199,8 @@ export function CycleView({
         />
       )}
 
-      {/* 3 - deterministic experiment plan */}
       {cycle.experiment && <ExperimentPlan experiment={cycle.experiment} />}
 
-      {/* 4 - policy authorization */}
       {cycle.policy_decision && cycle.experiment && (
         <PolicyDecision
           decision={cycle.policy_decision}
@@ -216,7 +209,6 @@ export function CycleView({
         />
       )}
 
-      {/* 5 - Razorpay deployment */}
       {cycle.razorpay_resource && (
         <RazorpayResourcePanel resource={cycle.razorpay_resource} />
       )}
@@ -230,10 +222,8 @@ export function CycleView({
         />
       )}
 
-      {/* 6 - fixed-horizon progress (attempts only, never interim stats) */}
       {cycle.progress && !result && <ExperimentProgress progress={cycle.progress} />}
 
-      {/* 7 - statistical decision */}
       {result && decision && (
         <>
           <StatisticalResult
@@ -253,7 +243,6 @@ export function CycleView({
         </>
       )}
 
-      {/* 8 - cycle activity */}
       <RecentActivity
         events={cycle.audit_events}
         chainValid={cycle.audit_chain_valid}

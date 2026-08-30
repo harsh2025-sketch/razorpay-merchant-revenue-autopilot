@@ -7,7 +7,7 @@ import {
   getOverview,
   startNewAutopilotCycle,
 } from "@/lib/api";
-import { MERCHANT_ID, RECENT_ACTIVITY_LIMIT } from "@/lib/constants";
+import { RECENT_ACTIVITY_LIMIT } from "@/lib/constants";
 import { describeApiError, type DescribedError } from "@/lib/errors";
 import { formatInrPaise, formatInt, formatPercent } from "@/lib/format";
 import type { AuditEvent, AutopilotState, MerchantOverview } from "@/lib/types";
@@ -32,6 +32,7 @@ export function OverviewView({
   initialOverview: MerchantOverview;
   initialAudit: AuditEvent[];
 }) {
+  const merchantId = initialOverview.merchant.merchant_id;
   const [overview, setOverview] = useState(initialOverview);
   const [audit, setAudit] = useState(initialAudit);
   const [actionLoading, setActionLoading] = useState(false);
@@ -49,21 +50,20 @@ export function OverviewView({
 
   const refreshOverviewAndAudit = useCallback(async () => {
     const [freshOverview, freshAudit] = await Promise.all([
-      getOverview(MERCHANT_ID),
-      getMerchantAudit(MERCHANT_ID, RECENT_ACTIVITY_LIMIT),
+      getOverview(merchantId),
+      getMerchantAudit(merchantId, RECENT_ACTIVITY_LIMIT),
     ]);
     setOverview(freshOverview);
     setAudit(freshAudit);
     return freshOverview;
-  }, []);
+  }, [merchantId]);
 
   const handleAction = useCallback(async () => {
     setError(null);
     setActionLoading(true);
     let step: Awaited<ReturnType<typeof advanceAutopilot>>;
     try {
-      // Exactly one lifecycle transition per user action.
-      step = await advanceAutopilot(MERCHANT_ID);
+      step = await advanceAutopilot(merchantId);
     } catch (caught) {
       setStepMessage(null);
       setError(describeApiError(caught));
@@ -71,10 +71,6 @@ export function OverviewView({
       setActionLoading(false);
       return;
     }
-    // A deployment-blocked response is intentionally visible even though the
-    // persisted approved/no-resource state resolves back to DEPLOY after the
-    // refresh. Keep the explicit abandon/start-new-cycle option until the user
-    // either retries a normal step or rolls the cycle forward.
     setRestartAvailable(step.step === "DEPLOYMENT_BLOCKED");
     setStepMessage(step.message);
     setViewCycleHref(
@@ -85,21 +81,19 @@ export function OverviewView({
     try {
       await refreshOverviewAndAudit();
     } catch (caught) {
-      // The step succeeded; only the reads are stale. Retry must refresh,
-      // never advance the lifecycle a second time.
       setError(describeApiError(caught));
       setErrorKind("refresh");
     } finally {
       setActionLoading(false);
     }
-  }, [refreshOverviewAndAudit]);
+  }, [merchantId, refreshOverviewAndAudit]);
 
   const handleStartNewCycle = useCallback(async () => {
     setError(null);
     setRestartLoading(true);
     let nextOpportunity: Awaited<ReturnType<typeof startNewAutopilotCycle>>;
     try {
-      nextOpportunity = await startNewAutopilotCycle(MERCHANT_ID);
+      nextOpportunity = await startNewAutopilotCycle(merchantId);
     } catch (caught) {
       setError(describeApiError(caught));
       setErrorKind("restart");
@@ -123,14 +117,12 @@ export function OverviewView({
     try {
       await refreshOverviewAndAudit();
     } catch (caught) {
-      // Rollover already succeeded. Never call it a second time merely because
-      // a follow-up GET failed; the retry path below performs reads only.
       setError(describeApiError(caught));
       setErrorKind("refresh");
     } finally {
       setRestartLoading(false);
     }
-  }, [refreshOverviewAndAudit]);
+  }, [merchantId, refreshOverviewAndAudit]);
 
   const refreshAll = useCallback(async () => {
     setError(null);
@@ -186,7 +178,6 @@ export function OverviewView({
         />
       )}
 
-      {/* Metric strip */}
       <section
         aria-label="Merchant metrics"
         className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-gray-200 bg-gray-100 lg:grid-cols-4"
@@ -221,7 +212,6 @@ export function OverviewView({
         </div>
       </section>
 
-      {/* Chart 1 + payment method table */}
       <div className="grid gap-5 xl:grid-cols-5">
         <div className="xl:col-span-3">
           <SegmentConversionChart segments={overview.segment_metrics} />
@@ -233,7 +223,6 @@ export function OverviewView({
 
       <RecentActivity events={audit} chainValid={overview.audit_chain_valid} />
 
-      {/* Quiet manual refresh - never blocks the page */}
       <div className="flex justify-end">
         <LoadingButton
           variant="outline"

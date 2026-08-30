@@ -2,7 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MERCHANT_NAME } from "@/lib/constants";
+import { useEffect, useState } from "react";
+import {
+  ACTIVE_MERCHANT_ID_STORAGE,
+  ACTIVE_MERCHANT_NAME_STORAGE,
+  DEFAULT_MERCHANT_ID,
+  DEFAULT_MERCHANT_NAME,
+} from "@/lib/constants";
 
 const NAV_LINKS = [
   { href: "/overview", label: "Overview" },
@@ -20,6 +26,24 @@ function isActive(pathname: string, href: string): boolean {
 
 export function TopNav() {
   const pathname = usePathname() ?? "";
+  const [merchantId, setMerchantId] = useState(DEFAULT_MERCHANT_ID);
+  const [merchantName, setMerchantName] = useState(DEFAULT_MERCHANT_NAME);
+
+  useEffect(() => {
+    const refreshMerchant = () => {
+      setMerchantId(
+        window.localStorage.getItem(ACTIVE_MERCHANT_ID_STORAGE) ?? DEFAULT_MERCHANT_ID,
+      );
+      setMerchantName(
+        window.localStorage.getItem(ACTIVE_MERCHANT_NAME_STORAGE) ?? DEFAULT_MERCHANT_NAME,
+      );
+    };
+    refreshMerchant();
+    window.addEventListener("mra:merchant-changed", refreshMerchant);
+    return () => window.removeEventListener("mra:merchant-changed", refreshMerchant);
+  }, []);
+
+  const demoMode = merchantId === DEFAULT_MERCHANT_ID;
 
   return (
     <header className="sticky top-0 z-30 border-b border-gray-200 bg-white">
@@ -55,19 +79,27 @@ export function TopNav() {
             );
           })}
         </nav>
-        <div className="ml-auto flex items-center gap-3">
-          <span className="hidden text-[13px] font-medium text-gray-700 md:inline">
-            {MERCHANT_NAME}
+        <div className="ml-auto flex items-center gap-2.5">
+          <span className="hidden max-w-[220px] truncate text-[13px] font-medium text-gray-700 md:inline">
+            {merchantName}
           </span>
           <span
-            title="Hosted demo: simulated Razorpay execution boundary"
-            className="inline-flex items-center rounded border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-700"
+            className={`inline-flex items-center rounded border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${
+              demoMode
+                ? "border-amber-200 bg-amber-50 text-amber-700"
+                : "border-emerald-200 bg-emerald-50 text-emerald-700"
+            }`}
           >
-            Demo Mode
+            {demoMode ? "Demo Data" : "Merchant Data"}
           </span>
+          <Link
+            href="/onboarding"
+            className="rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-[12px] font-medium text-gray-700 hover:bg-gray-50"
+          >
+            Switch
+          </Link>
         </div>
       </div>
-      {/* Mobile fallback: simple inline menu, no collapse machinery. */}
       <nav
         aria-label="Primary mobile"
         className="flex items-center gap-1 border-t border-gray-100 px-4 pb-2 pt-1 sm:hidden"

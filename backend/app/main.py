@@ -5,6 +5,7 @@ The app exposes:
 - ``GET /health`` (preserved from the Task 01 foundation),
 - the ``/api/v1`` product API (Task 15) whose routes only orchestrate the
   existing deterministic engines,
+- Task 21A merchant onboarding + initial CSV ingestion,
 - an additive explicit cycle-rollover route used to start another optimization
   cycle without deleting historical results,
 - environment-driven CORS for the separately deployed dashboard.
@@ -25,6 +26,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.cycle_router import router as cycle_router
+from app.api.onboarding_router import router as onboarding_router
 from app.api.router import router as api_router
 from app.config import get_settings
 
@@ -99,6 +101,7 @@ def create_app(*, cors_origins: Iterable[str] | None = None) -> FastAPI:
 
     app.include_router(api_router)
     app.include_router(cycle_router)
+    app.include_router(onboarding_router)
 
     @app.get("/health", tags=["health"], summary="Liveness probe")
     def read_health() -> dict[str, str]:
