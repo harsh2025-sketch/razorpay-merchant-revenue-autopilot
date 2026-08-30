@@ -116,9 +116,9 @@ export function MerchantIntelligenceView({
                   <Stat label="p-value" value={formatPValue(config.p_value)} />
                   <Stat label="Promoted" value={formatUtcShort(config.promoted_at)} />
                 </dl>
-                <Link href={`/autopilot/${config.source_experiment_id}`} className="mt-3 block text-[11.5px] text-indigo-600 hover:text-indigo-800">
+                <div className="mt-3 text-[11.5px] text-gray-500">
                   Source experiment {shortId(config.source_experiment_id)}
-                </Link>
+                </div>
               </article>
             ))}
           </div>

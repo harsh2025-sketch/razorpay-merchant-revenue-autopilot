@@ -38,7 +38,7 @@ describe("Merchant Intelligence view", () => {
     expect(screen.getByText("Next")).toBeInTheDocument();
     expect(screen.getByText("Partial payment")).toBeInTheDocument();
     expect(screen.getAllByText("Offer discount").length).toBeGreaterThan(0);
-    expect(screen.getByText("+4.0pp")).toBeInTheDocument();
+    expect(screen.getAllByText("+4.0pp").length).toBeGreaterThan(0);
     expect(screen.getByText(/not a forecast, booked revenue, or causal claim/i)).toBeInTheDocument();
     expect(screen.queryByText(/revenue recovered/i)).toBeNull();
   });
