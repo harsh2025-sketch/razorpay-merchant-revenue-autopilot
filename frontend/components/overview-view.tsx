@@ -9,7 +9,7 @@ import {
   runExperimentToDecision,
   startNewAutopilotCycle,
 } from "@/lib/api";
-import { RECENT_ACTIVITY_LIMIT } from "@/lib/constants";
+import { DEFAULT_MERCHANT_ID, RECENT_ACTIVITY_LIMIT } from "@/lib/constants";
 import { describeApiError, type DescribedError } from "@/lib/errors";
 import { formatInrPaise, formatInt, formatPercent } from "@/lib/format";
 import type { AuditEvent, AutopilotState, MerchantOverview } from "@/lib/types";
@@ -28,9 +28,10 @@ function isOneClickExperimentAction(action: string | null): boolean {
 /**
  * Overview client state container. Task 21B tracks detector readiness beside
  * the lifecycle read model so an exhausted historical revision becomes an
- * explicit wait-for-data product state. Task 21C routes runtime/evaluation
- * states through one backend run-to-decision operation, so a merchant never
- * has to click Run batch repeatedly to reach the fixed horizon.
+ * explicit wait-for-data product state. Task 21C routes TechBazaar runtime /
+ * evaluation through one run-to-decision operation. Task 22 keeps uploaded
+ * merchants out of that sealed synthetic evaluation world and presents an
+ * explicit wait-for-real-outcomes state instead.
  */
 export function OverviewView({
   initialOverview,
@@ -59,7 +60,11 @@ export function OverviewView({
   const status = overview.autopilot_status;
   const waitingForData =
     status.next_action === "DETECT_OPPORTUNITIES" && !detectionReady;
-  const effectiveNextAction = waitingForData ? null : status.next_action;
+  const waitingForLiveOutcomes =
+    merchantId !== DEFAULT_MERCHANT_ID &&
+    isOneClickExperimentAction(status.next_action);
+  const effectiveNextAction =
+    waitingForData || waitingForLiveOutcomes ? null : status.next_action;
 
   const refreshOverviewAndAudit = useCallback(async () => {
     const [freshOverview, freshAudit, freshReadiness] = await Promise.all([
@@ -177,14 +182,18 @@ export function OverviewView({
 
   const activeCycleValue = waitingForData
     ? "Awaiting data"
-    : lifecycleLabel(status.state, status.latest_experiment_status);
+    : waitingForLiveOutcomes
+      ? "Awaiting outcomes"
+      : lifecycleLabel(status.state, status.latest_experiment_status);
   const activeCycleSub = waitingForData
     ? "Append new transactions before another scan"
-    : status.state === "COMPLETED" && status.latest_statistical_decision != null
-      ? `Decision ${status.latest_statistical_decision}`
-      : `${formatInt(status.active_experiment_count)} active experiment${
-          status.active_experiment_count === 1 ? "" : "s"
-        }`;
+    : waitingForLiveOutcomes
+      ? "Real assigned payment outcomes required"
+      : status.state === "COMPLETED" && status.latest_statistical_decision != null
+        ? `Decision ${status.latest_statistical_decision}`
+        : `${formatInt(status.active_experiment_count)} active experiment${
+            status.active_experiment_count === 1 ? "" : "s"
+          }`;
 
   return (
     <div className="space-y-5">
@@ -193,12 +202,15 @@ export function OverviewView({
         nextAction={effectiveNextAction}
         latestDecision={status.latest_statistical_decision}
         waitingForData={waitingForData}
+        waitingForLiveOutcomes={waitingForLiveOutcomes}
         loading={actionLoading}
         restartLoading={restartLoading}
         restartAvailable={restartAvailable}
         stepMessage={stepMessage}
         viewCycleHref={viewCycleHref}
-        onAction={waitingForData ? undefined : handleAction}
+        onAction={
+          waitingForData || waitingForLiveOutcomes ? undefined : handleAction
+        }
         onStartNewCycle={handleStartNewCycle}
       />
 
