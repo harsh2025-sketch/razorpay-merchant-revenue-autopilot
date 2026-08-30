@@ -1,11 +1,17 @@
 import { API_BASE_URL, API_PATHS } from "./constants";
 import type {
+  DemoMerchantSource,
+  MerchantDataStatus,
+  OnboardedMerchant,
+} from "./onboarding-types";
+import type {
   AuditEvent,
   AutopilotStep,
   AutopilotCycle,
   ExperimentRollback,
   MerchantOverview,
   MerchantIntelligence,
+  MerchantSummary,
   Opportunity,
 } from "./types";
 
@@ -78,6 +84,10 @@ async function toApiError(response: Response): Promise<ApiError> {
 // Reads
 // ---------------------------------------------------------------------------
 
+export function getMerchant(merchantId: string): Promise<MerchantSummary> {
+  return request<MerchantSummary>(API_PATHS.merchant(merchantId));
+}
+
 export function getOverview(merchantId: string): Promise<MerchantOverview> {
   return request<MerchantOverview>(API_PATHS.overview(merchantId));
 }
@@ -103,8 +113,44 @@ export function getMerchantAudit(
   return request<AuditEvent[]>(API_PATHS.merchantAudit(merchantId, limit));
 }
 
+export function getDemoMerchantSource(): Promise<DemoMerchantSource> {
+  return request<DemoMerchantSource>(API_PATHS.onboardingDemo);
+}
+
+export function getOnboardingDataStatus(
+  merchantId: string,
+): Promise<MerchantDataStatus> {
+  return request<MerchantDataStatus>(API_PATHS.onboardingDataStatus(merchantId));
+}
+
 // ---------------------------------------------------------------------------
-// Mutations - one user action, exactly one backend transition
+// Mutations
+// ---------------------------------------------------------------------------
+
+export function onboardMerchantWithCsv(input: {
+  name: string;
+  category?: string;
+  monthlyGmvPaise?: number;
+  file: File;
+}): Promise<OnboardedMerchant> {
+  const body = new FormData();
+  body.set("name", input.name.trim());
+  if (input.category?.trim()) body.set("category", input.category.trim());
+  if (input.monthlyGmvPaise != null) {
+    body.set("monthly_gmv_paise", String(input.monthlyGmvPaise));
+  }
+  body.set("file", input.file);
+
+  // Do not set Content-Type manually: the browser must add the multipart
+  // boundary to the FormData request.
+  return request<OnboardedMerchant>(API_PATHS.onboardMerchantWithCsv, {
+    method: "POST",
+    body,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Lifecycle mutations - one user action, exactly one backend transition
 // ---------------------------------------------------------------------------
 
 export function advanceAutopilot(merchantId: string): Promise<AutopilotStep> {
