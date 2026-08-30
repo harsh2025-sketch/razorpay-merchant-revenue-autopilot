@@ -2,20 +2,21 @@ import { MerchantIntelligenceView } from "@/components/merchant-intelligence-vie
 import { InlineError } from "@/components/inline-error";
 import { PageHeader } from "@/components/page-header";
 import { RetryRefresh } from "@/components/retry-refresh";
+import { getActiveMerchantId } from "@/lib/active-merchant";
 import { getMerchantIntelligence } from "@/lib/api";
-import { MERCHANT_ID, MERCHANT_NAME } from "@/lib/constants";
 import { describeApiError } from "@/lib/errors";
 
 export const dynamic = "force-dynamic";
 
 export default async function IntelligencePage() {
+  const merchantId = getActiveMerchantId();
   try {
-    const intelligence = await getMerchantIntelligence(MERCHANT_ID);
+    const intelligence = await getMerchantIntelligence(merchantId);
     return (
       <>
         <PageHeader
           title="Merchant Intelligence"
-          subtitle={`${intelligence.merchant.name || MERCHANT_NAME} · Persisted optimization learning`}
+          subtitle={`${intelligence.merchant.name} · Persisted optimization learning`}
           meta={`Champion v${intelligence.champion.version}`}
         />
         <MerchantIntelligenceView intelligence={intelligence} />
@@ -26,11 +27,17 @@ export default async function IntelligencePage() {
       <>
         <PageHeader
           title="Merchant Intelligence"
-          subtitle={`${MERCHANT_NAME} · Persisted optimization learning`}
+          subtitle="Persisted optimization learning"
         />
         <InlineError error={describeApiError(caught)} className="max-w-2xl" />
-        <div className="mt-4">
+        <div className="mt-4 flex items-center gap-3">
           <RetryRefresh />
+          <a
+            href="/onboarding"
+            className="rounded-md border border-gray-300 bg-white px-3 py-2 text-[13px] font-medium text-gray-700 hover:bg-gray-50"
+          >
+            Choose merchant data
+          </a>
         </div>
       </>
     );
