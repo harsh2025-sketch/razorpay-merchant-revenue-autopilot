@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 import {
   advanceAutopilot,
+  getDetectionReadiness,
   getMerchantAudit,
   getOverview,
   startNewAutopilotCycle,
@@ -20,21 +21,23 @@ import { RecentActivity } from "./recent-activity";
 import { SegmentConversionChart } from "./segment-conversion-chart";
 
 /**
- * Overview client state container: holds the fetched overview + recent
- * audit events, performs exactly one Autopilot step per click, then refetches.
- * Terminal cycles can be explicitly rolled forward without deleting their
- * historical opportunity, experiment, result, resource, or audit records.
+ * Overview client state container. Task 21B tracks detector readiness beside
+ * the lifecycle read model so an exhausted historical revision becomes an
+ * explicit wait-for-data product state rather than another Scan button.
  */
 export function OverviewView({
   initialOverview,
   initialAudit,
+  initialDetectionReady,
 }: {
   initialOverview: MerchantOverview;
   initialAudit: AuditEvent[];
+  initialDetectionReady: boolean;
 }) {
   const merchantId = initialOverview.merchant.merchant_id;
   const [overview, setOverview] = useState(initialOverview);
   const [audit, setAudit] = useState(initialAudit);
+  const [detectionReady, setDetectionReady] = useState(initialDetectionReady);
   const [actionLoading, setActionLoading] = useState(false);
   const [restartLoading, setRestartLoading] = useState(false);
   const [restartAvailable, setRestartAvailable] = useState(false);
@@ -47,14 +50,19 @@ export function OverviewView({
   const [viewCycleHref, setViewCycleHref] = useState<string | null>(null);
 
   const status = overview.autopilot_status;
+  const waitingForData =
+    status.next_action === "DETECT_OPPORTUNITIES" && !detectionReady;
+  const effectiveNextAction = waitingForData ? null : status.next_action;
 
   const refreshOverviewAndAudit = useCallback(async () => {
-    const [freshOverview, freshAudit] = await Promise.all([
+    const [freshOverview, freshAudit, freshReadiness] = await Promise.all([
       getOverview(merchantId),
       getMerchantAudit(merchantId, RECENT_ACTIVITY_LIMIT),
+      getDetectionReadiness(merchantId),
     ]);
     setOverview(freshOverview);
     setAudit(freshAudit);
+    setDetectionReady(freshReadiness.ready);
     return freshOverview;
   }, [merchantId]);
 
@@ -109,7 +117,7 @@ export function OverviewView({
       setViewCycleHref(`/autopilot/${nextOpportunity.id}`);
     } else {
       setStepMessage(
-        "Previous cycle closed. No current opportunity meets the detector threshold.",
+        "Previous cycle closed. Add new payment data before another detection pass.",
       );
       setViewCycleHref(null);
     }
@@ -142,9 +150,12 @@ export function OverviewView({
     .filter((s) => typeof s.conversion_rate === "number")
     .sort((a, b) => (a.conversion_rate ?? 1) - (b.conversion_rate ?? 1))[0];
 
-  const activeCycleValue = lifecycleLabel(status.state, status.latest_experiment_status);
-  const activeCycleSub =
-    status.state === "COMPLETED" && status.latest_statistical_decision != null
+  const activeCycleValue = waitingForData
+    ? "Awaiting data"
+    : lifecycleLabel(status.state, status.latest_experiment_status);
+  const activeCycleSub = waitingForData
+    ? "Append new transactions before another scan"
+    : status.state === "COMPLETED" && status.latest_statistical_decision != null
       ? `Decision ${status.latest_statistical_decision}`
       : `${formatInt(status.active_experiment_count)} active experiment${
           status.active_experiment_count === 1 ? "" : "s"
@@ -154,14 +165,15 @@ export function OverviewView({
     <div className="space-y-5">
       <AutopilotStatus
         state={status.state}
-        nextAction={status.next_action}
+        nextAction={effectiveNextAction}
         latestDecision={status.latest_statistical_decision}
+        waitingForData={waitingForData}
         loading={actionLoading}
         restartLoading={restartLoading}
         restartAvailable={restartAvailable}
         stepMessage={stepMessage}
         viewCycleHref={viewCycleHref}
-        onAction={handleAction}
+        onAction={waitingForData ? undefined : handleAction}
         onStartNewCycle={handleStartNewCycle}
       />
 
