@@ -94,7 +94,12 @@ def material_evidence_change(
         if current is None or prior is None:
             continue
         delta = abs(current - prior)
-        if delta >= MATERIAL_RATE_DELTA:
+        if delta > MATERIAL_RATE_DELTA or math.isclose(
+            delta,
+            MATERIAL_RATE_DELTA,
+            rel_tol=0.0,
+            abs_tol=1e-12,
+        ):
             reasons.append(f"{key}_delta={delta:.6f}")
 
     current_attempts = _finite_number(current_catalog.get("segment_attempts"))
