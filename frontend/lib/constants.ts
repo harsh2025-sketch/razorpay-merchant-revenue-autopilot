@@ -1,12 +1,12 @@
-/**
- * Single place for the merchant identity and API location.
- *
- * The product is currently single-merchant by design: no selector, no login.
- * Change these constants only when the backend demo merchant changes.
- */
+/** Default demo identity and API location. */
 
-export const MERCHANT_ID = "merchant_techbazaar";
-export const MERCHANT_NAME = "TechBazaar Electronics";
+export const DEFAULT_MERCHANT_ID = "merchant_techbazaar";
+export const DEFAULT_MERCHANT_NAME = "TechBazaar Electronics";
+
+/** Browser-persisted active merchant selection. */
+export const ACTIVE_MERCHANT_ID_COOKIE = "mra_merchant_id";
+export const ACTIVE_MERCHANT_ID_STORAGE = "mra_merchant_id";
+export const ACTIVE_MERCHANT_NAME_STORAGE = "mra_merchant_name";
 
 /**
  * Root of the Merchant Revenue Autopilot API as seen by browser-side fetches.
@@ -38,6 +38,7 @@ export const RECENT_ACTIVITY_LIMIT = 5;
 export const AUDIT_PAGE_LIMIT = 100;
 
 export const API_PATHS = {
+  merchant: (merchantId: string) => `/api/v1/merchants/${merchantId}`,
   overview: (merchantId: string) => `/api/v1/merchants/${merchantId}/overview`,
   intelligence: (merchantId: string) =>
     `/api/v1/merchants/${merchantId}/intelligence`,
@@ -53,4 +54,8 @@ export const API_PATHS = {
     `/api/v1/merchants/${merchantId}/autopilot/new-cycle`,
   rollbackExperiment: (experimentId: string) =>
     `/api/v1/experiments/${experimentId}/rollback`,
+  onboardingDemo: "/api/v1/onboarding/demo",
+  onboardMerchantWithCsv: "/api/v1/onboarding/merchants/with-csv",
+  onboardingDataStatus: (merchantId: string) =>
+    `/api/v1/onboarding/merchants/${merchantId}/data-status`,
 } as const;
