@@ -6,10 +6,10 @@ the same canonical contract as Task 21A, deduplicated by the stable external
 transaction id, and append only previously unseen rows. TechBazaar advances in
 deterministic non-overlapping periods with distinct payment-attempt ids.
 
-A successful append is recorded in the existing generic operation ledger. That
-record is not an external payment write; it is a durable data-revision marker
-used by the cycle and detector boundaries to distinguish new evidence from a
-replay of an unchanged historical dataset.
+The existing generic operation ledger is also used for two internal revision
+markers: successful data appends and successful detector passes. That makes a
+no-op detector result durable too: a revision that produced zero opportunities
+cannot be scanned repeatedly and presented as fresh evidence.
 """
 
 from __future__ import annotations
@@ -42,6 +42,7 @@ from app.simulation.generator import generate_baseline_events
 from app.simulation.merchant import TECHBAZAAR_PROFILE
 
 DATA_APPEND_OPERATION_TYPE = "merchant_data_append"
+DETECTION_PASS_OPERATION_TYPE = "merchant_detection_pass"
 DEMO_PERIOD_DAYS = 7
 DEMO_PERIOD_SEED_BASE = 20260901
 QUERY_CHUNK_SIZE = 500
@@ -194,15 +195,20 @@ def _same_observation(existing: PaymentAttempt, incoming: PaymentAttempt) -> boo
     )
 
 
-def _merchant_revision_prefix(merchant_id: str) -> str:
-    # Hashing makes the prefix SQL-LIKE-safe (merchant ids may contain '_' or
-    # '%') and keeps arbitrary tenant identifiers out of generic ledger keys.
-    digest = hashlib.sha256(merchant_id.encode("utf-8")).hexdigest()
-    return f"merchant:{digest}:data_append:"
+def _merchant_scope_hash(merchant_id: str) -> str:
+    return hashlib.sha256(merchant_id.encode("utf-8")).hexdigest()
+
+
+def _append_prefix(merchant_id: str) -> str:
+    return f"merchant:{_merchant_scope_hash(merchant_id)}:data_append:"
+
+
+def _detection_prefix(merchant_id: str) -> str:
+    return f"merchant:{_merchant_scope_hash(merchant_id)}:detection_pass:"
 
 
 def _append_operation_key(merchant_id: str, revision_token: str) -> str:
-    return _merchant_revision_prefix(merchant_id) + revision_token
+    return _append_prefix(merchant_id) + revision_token
 
 
 def _record_append_revision(
@@ -234,7 +240,7 @@ def _record_append_revision(
 
 
 def latest_data_append_at(db: Session, merchant_id: str) -> datetime | None:
-    prefix = _merchant_revision_prefix(merchant_id)
+    prefix = _append_prefix(merchant_id)
     return (
         db.query(func.max(OperationExecution.created_at))
         .filter(OperationExecution.operation_type == DATA_APPEND_OPERATION_TYPE)
@@ -258,7 +264,7 @@ def has_new_data_since(
 
 
 def data_revision_count(db: Session, merchant_id: str) -> int:
-    prefix = _merchant_revision_prefix(merchant_id)
+    prefix = _append_prefix(merchant_id)
     return int(
         db.query(func.count(OperationExecution.id))
         .filter(OperationExecution.operation_type == DATA_APPEND_OPERATION_TYPE)
@@ -269,14 +275,90 @@ def data_revision_count(db: Session, merchant_id: str) -> int:
     )
 
 
-def detection_readiness(db: Session, merchant_id: str) -> DetectionReadiness:
-    """Whether a no-active-opportunity merchant has evidence worth rescanning.
+def historical_revision_token(db: Session, merchant_id: str) -> str:
+    """Fingerprint the append-only historical observation revision.
 
-    The first historical dataset is always analyzable. After a detector pass,
-    another scan is actionable only when a successful append revision is newer
-    than the latest persisted opportunity. All-duplicate uploads create no
-    revision, so they cannot make unchanged evidence look fresh.
+    Count is sufficient to distinguish revisions under the Task 21B contract
+    because rows can only be appended, never mutated or deleted by this path.
+    The latest timestamp is included as a defensive second dimension for data
+    written by existing scripts outside the product upload boundary.
     """
+    count, latest_created = (
+        db.query(
+            func.count(PaymentAttempt.id),
+            func.max(PaymentAttempt.created_at),
+        )
+        .filter(PaymentAttempt.merchant_id == merchant_id)
+        .filter(PaymentAttempt.experiment_id.is_(None))
+        .one()
+    )
+    latest = _as_utc(latest_created)
+    raw = f"{int(count or 0)}:{latest.isoformat() if latest else 'none'}"
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+
+def _detection_operation_key(merchant_id: str, revision_token: str) -> str:
+    return _detection_prefix(merchant_id) + revision_token
+
+
+def record_detection_pass(
+    db: Session,
+    merchant_id: str,
+    *,
+    opportunity_count: int,
+) -> OperationExecution:
+    """Mark the current historical revision as analyzed, including zero hits."""
+    revision = historical_revision_token(db, merchant_id)
+    key = _detection_operation_key(merchant_id, revision)
+    existing = (
+        db.query(OperationExecution)
+        .filter(OperationExecution.operation_key == key)
+        .one_or_none()
+    )
+    if existing is not None:
+        return existing
+    row = OperationExecution(
+        operation_key=key,
+        operation_type=DETECTION_PASS_OPERATION_TYPE,
+        request_payload_hash=revision,
+        status="succeeded",
+        response_json={
+            "historical_revision": revision,
+            "opportunity_count": int(opportunity_count),
+        },
+    )
+    db.add(row)
+    db.flush()
+    return row
+
+
+def _current_revision_was_detected(db: Session, merchant_id: str) -> bool:
+    revision = historical_revision_token(db, merchant_id)
+    key = _detection_operation_key(merchant_id, revision)
+    return (
+        db.query(OperationExecution.id)
+        .filter(OperationExecution.operation_key == key)
+        .filter(OperationExecution.operation_type == DETECTION_PASS_OPERATION_TYPE)
+        .filter(OperationExecution.status == "succeeded")
+        .first()
+        is not None
+    )
+
+
+def _detection_pass_count(db: Session, merchant_id: str) -> int:
+    prefix = _detection_prefix(merchant_id)
+    return int(
+        db.query(func.count(OperationExecution.id))
+        .filter(OperationExecution.operation_type == DETECTION_PASS_OPERATION_TYPE)
+        .filter(OperationExecution.status == "succeeded")
+        .filter(OperationExecution.operation_key.like(prefix + "%"))
+        .scalar()
+        or 0
+    )
+
+
+def detection_readiness(db: Session, merchant_id: str) -> DetectionReadiness:
+    """Whether the current historical revision has not yet been analyzed."""
     if db.get(Merchant, merchant_id) is None:
         raise MerchantOnboardingNotFoundError(f"merchant not found: {merchant_id}")
 
@@ -305,27 +387,40 @@ def detection_readiness(db: Session, merchant_id: str) -> DetectionReadiness:
             ),
             latest_data_append_at=latest_append,
         )
-    if latest_opportunity is None:
+
+    if _current_revision_was_detected(db, merchant_id):
         return DetectionReadiness(
             merchant_id=merchant_id,
-            ready=True,
-            reason="INITIAL_DATA",
-            latest_opportunity_at=None,
+            ready=False,
+            reason="WAITING_FOR_NEW_DATA",
+            latest_opportunity_at=(
+                latest_opportunity.created_at if latest_opportunity is not None else None
+            ),
             latest_data_append_at=latest_append,
         )
-    if has_new_data_since(db, merchant_id, latest_opportunity.created_at):
-        return DetectionReadiness(
-            merchant_id=merchant_id,
-            ready=True,
-            reason="NEW_DATA",
-            latest_opportunity_at=latest_opportunity.created_at,
-            latest_data_append_at=latest_append,
-        )
+
+    prior_passes = _detection_pass_count(db, merchant_id)
+    if prior_passes == 0 and latest_opportunity is not None:
+        # Compatibility for databases created before Task 21B: a persisted
+        # opportunity proves a detector pass already happened even though the
+        # new revision marker did not exist yet. Only an append newer than that
+        # opportunity may unlock a fresh pass.
+        if not has_new_data_since(db, merchant_id, latest_opportunity.created_at):
+            return DetectionReadiness(
+                merchant_id=merchant_id,
+                ready=False,
+                reason="WAITING_FOR_NEW_DATA",
+                latest_opportunity_at=latest_opportunity.created_at,
+                latest_data_append_at=latest_append,
+            )
+
     return DetectionReadiness(
         merchant_id=merchant_id,
-        ready=False,
-        reason="WAITING_FOR_NEW_DATA",
-        latest_opportunity_at=latest_opportunity.created_at,
+        ready=True,
+        reason="INITIAL_DATA" if prior_passes == 0 else "NEW_DATA",
+        latest_opportunity_at=(
+            latest_opportunity.created_at if latest_opportunity is not None else None
+        ),
         latest_data_append_at=latest_append,
     )
 
