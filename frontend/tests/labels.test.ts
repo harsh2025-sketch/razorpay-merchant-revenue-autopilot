@@ -15,15 +15,15 @@ import { parseEvidence } from "@/lib/evidence";
 import { makeOpportunity } from "./fixtures";
 
 describe("context-aware action labels", () => {
-  it("maps every lifecycle action to its specified label", () => {
+  it("maps runtime and evaluation states to one Run Experiment action", () => {
     expect(ACTION_LABELS.DETECT_OPPORTUNITIES).toBe("Scan for Opportunities");
     expect(ACTION_LABELS.DIAGNOSE_OPPORTUNITY).toBe("Generate Diagnosis");
     expect(ACTION_LABELS.PLAN_EXPERIMENT).toBe("Plan Experiment");
     expect(ACTION_LABELS.EVALUATE_POLICY).toBe("Run Policy Check");
     expect(ACTION_LABELS.DEPLOY_TREATMENT).toBe("Deploy Treatment");
     expect(ACTION_LABELS.CONFIGURE_OFFER_MAPPING).toBe("Deployment Blocked");
-    expect(ACTION_LABELS.RUN_EXPERIMENT_BATCH).toBe("Run Next Batch");
-    expect(ACTION_LABELS.EVALUATE_EXPERIMENT).toBe("Evaluate Results");
+    expect(ACTION_LABELS.RUN_EXPERIMENT_BATCH).toBe("Run Experiment");
+    expect(ACTION_LABELS.EVALUATE_EXPERIMENT).toBe("Run Experiment");
     expect(ACTION_LABELS.ROLLBACK_TREATMENT).toBe("Roll Back Treatment");
     expect(ACTION_LABELS.DONE).toBe("Cycle Complete");
   });
@@ -35,12 +35,15 @@ describe("context-aware action labels", () => {
     expect(actionLoadingLabel("DIAGNOSE_OPPORTUNITY")).toBe(
       "Generating diagnosis…",
     );
+    expect(actionLoadingLabel("RUN_EXPERIMENT_BATCH")).toBe(
+      "Running to fixed horizon…",
+    );
     expect(actionLoadingLabel("ROLLBACK_TREATMENT")).toBe("Rolling back…");
   });
 });
 
 describe("autopilot status sentences", () => {
-  it("uses the frozen sentences for each state", () => {
+  it("uses the product sentences for each state", () => {
     expect(autopilotStatusSentence("IDLE", null)).toBe(
       "Ready to analyze payment performance for optimization opportunities.",
     );
@@ -56,11 +59,11 @@ describe("autopilot status sentences", () => {
     expect(autopilotStatusSentence("DEPLOYMENT_BLOCKED", null)).toBe(
       "Deployment is blocked because this intervention cannot yet be safely mapped to a verified Razorpay resource.",
     );
-    expect(autopilotStatusSentence("RUNNING", null)).toBe(
-      "The experiment is running toward its fixed sample horizon.",
+    expect(autopilotStatusSentence("RUNNING", null)).toContain(
+      "one action",
     );
-    expect(autopilotStatusSentence("EVALUATION_PENDING", null)).toBe(
-      "Both cohorts reached the sample target. Statistical evaluation is ready.",
+    expect(autopilotStatusSentence("EVALUATION_PENDING", null)).toContain(
+      "without adding more traffic",
     );
   });
 
@@ -92,7 +95,8 @@ describe("actor strip derivation", () => {
     ]);
 
     const running = actorStripStages("RUNNING", "RUN_EXPERIMENT_BATCH");
-    expect(running[4]).toMatchObject({ id: "razorpay", status: "current" });
+    expect(running[4]).toMatchObject({ id: "razorpay", status: "completed" });
+    expect(running[5]).toMatchObject({ id: "statistics", status: "current" });
     expect(running[0].status).toBe("completed");
 
     const evaluating = actorStripStages("EVALUATION_PENDING", "EVALUATE_EXPERIMENT");

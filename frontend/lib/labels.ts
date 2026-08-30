@@ -23,8 +23,8 @@ export const ACTION_LABELS: Record<AutopilotNextAction, string> = {
   EVALUATE_POLICY: "Run Policy Check",
   DEPLOY_TREATMENT: "Deploy Treatment",
   CONFIGURE_OFFER_MAPPING: "Deployment Blocked",
-  RUN_EXPERIMENT_BATCH: "Run Next Batch",
-  EVALUATE_EXPERIMENT: "Evaluate Results",
+  RUN_EXPERIMENT_BATCH: "Run Experiment",
+  EVALUATE_EXPERIMENT: "Run Experiment",
   ROLLBACK_TREATMENT: "Roll Back Treatment",
   STOP: "",
   DONE: "Cycle Complete",
@@ -39,8 +39,8 @@ export const ACTION_LOADING_LABELS: Partial<
   EVALUATE_POLICY: "Checking policy…",
   DEPLOY_TREATMENT: "Deploying…",
   CONFIGURE_OFFER_MAPPING: "Checking deployment…",
-  RUN_EXPERIMENT_BATCH: "Running batch…",
-  EVALUATE_EXPERIMENT: "Evaluating…",
+  RUN_EXPERIMENT_BATCH: "Running to fixed horizon…",
+  EVALUATE_EXPERIMENT: "Evaluating fixed horizon…",
   ROLLBACK_TREATMENT: "Rolling back…",
   DONE: "Completing…",
 };
@@ -53,8 +53,8 @@ export const ACTION_ACTORS: Record<AutopilotNextAction, string | null> = {
   EVALUATE_POLICY: "Policy Engine",
   DEPLOY_TREATMENT: "Razorpay Executor",
   CONFIGURE_OFFER_MAPPING: "Razorpay Executor",
-  RUN_EXPERIMENT_BATCH: "Experiment Runtime",
-  EVALUATE_EXPERIMENT: "Statistical Engine",
+  RUN_EXPERIMENT_BATCH: "Runtime + Statistics",
+  EVALUATE_EXPERIMENT: "Runtime + Statistics",
   ROLLBACK_TREATMENT: "Razorpay Executor",
   STOP: null,
   DONE: null,
@@ -106,9 +106,9 @@ export function autopilotStatusSentence(
     case "POLICY_REJECTED":
       return "Merchant policy rejected the proposed experiment.";
     case "RUNNING":
-      return "The experiment is running toward its fixed sample horizon.";
+      return "The approved experiment is ready to run to its fixed sample horizon and evaluate in one action.";
     case "EVALUATION_PENDING":
-      return "Both cohorts reached the sample target. Statistical evaluation is ready.";
+      return "Both cohorts reached the fixed sample horizon. Run Experiment will record the statistical decision without adding more traffic.";
     case "COMPLETED":
       switch (decision) {
         case "KEEP":
@@ -182,7 +182,7 @@ export function actorStripStages(
       done.push("detector", "ai", "planner");
       break;
     case "RUNNING":
-      done.push("detector", "ai", "planner", "policy");
+      done.push("detector", "ai", "planner", "policy", "razorpay");
       break;
     case "EVALUATION_PENDING":
       done.push("detector", "ai", "planner", "policy", "razorpay");
@@ -221,8 +221,6 @@ export function actorStripStages(
       tone = "rejected";
       break;
     case "RUNNING":
-      current = nextAction === "EVALUATE_EXPERIMENT" ? "statistics" : "razorpay";
-      break;
     case "EVALUATION_PENDING":
       current = "statistics";
       break;

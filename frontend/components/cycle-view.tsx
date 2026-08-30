@@ -3,7 +3,13 @@
 import Link from "next/link";
 import { useCallback, useState } from "react";
 import { ArrowLeft } from "lucide-react";
-import { advanceAutopilot, getCycle, getOverview, rollbackExperiment } from "@/lib/api";
+import {
+  advanceAutopilot,
+  getCycle,
+  getOverview,
+  rollbackExperiment,
+  runExperimentToDecision,
+} from "@/lib/api";
 import { describeApiError, type DescribedError } from "@/lib/errors";
 import { shortId } from "@/lib/format";
 import type {
@@ -32,6 +38,10 @@ import {
 } from "./statistical-result";
 import { StatusBadge, type BadgeTone } from "./badges";
 import { InlineError } from "./inline-error";
+
+function isOneClickExperimentAction(action: AutopilotNextAction | null): boolean {
+  return action === "RUN_EXPERIMENT_BATCH" || action === "EVALUATE_EXPERIMENT";
+}
 
 function cycleStatusBadge(
   cycle: AutopilotCycle,
@@ -67,6 +77,8 @@ function cycleStatusBadge(
 /**
  * Cycle detail state container. The page is a chronological decision record:
  * evidence → (boundary) → AI → plan → policy → Razorpay → progress → result.
+ * Task 21C combines only the runtime + statistics user interaction into one
+ * backend run-to-decision request after the treatment resource exists.
  */
 export function CycleView({
   initialCycle,
@@ -104,14 +116,22 @@ export function CycleView({
     setError(null);
     setActionLoading(true);
     try {
-      await advanceAutopilot(merchantId);
+      if (isOneClickExperimentAction(nextAction)) {
+        const experimentId = cycle.experiment?.id;
+        if (!experimentId) {
+          throw new Error("No experiment is available to run.");
+        }
+        await runExperimentToDecision(experimentId);
+      } else {
+        await advanceAutopilot(merchantId);
+      }
       await refetch();
     } catch (caught) {
       setError(describeApiError(caught));
     } finally {
       setActionLoading(false);
     }
-  }, [merchantId, refetch]);
+  }, [cycle.experiment?.id, merchantId, nextAction, refetch]);
 
   const handleRollback = useCallback(async () => {
     const experimentId = cycle.experiment?.id;
@@ -222,7 +242,9 @@ export function CycleView({
         />
       )}
 
-      {cycle.progress && !result && <ExperimentProgress progress={cycle.progress} />}
+      {cycle.progress && !result && (
+        <ExperimentProgress progress={cycle.progress} />
+      )}
 
       {result && decision && (
         <>
