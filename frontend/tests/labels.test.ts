@@ -51,7 +51,7 @@ describe("autopilot status sentences", () => {
       "The proposed experiment is awaiting merchant policy authorization.",
     );
     expect(autopilotStatusSentence("DEPLOYMENT_PENDING", null)).toBe(
-      "Policy approved. The treatment is ready for the configured execution boundary.",
+      "Policy approved. The treatment is ready for Razorpay Test Mode deployment.",
     );
     expect(autopilotStatusSentence("DEPLOYMENT_BLOCKED", null)).toBe(
       "Deployment is blocked because this intervention cannot yet be safely mapped to a verified Razorpay resource.",
