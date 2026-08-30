@@ -12,6 +12,7 @@ import {
 
 const NAV_LINKS = [
   { href: "/overview", label: "Overview" },
+  { href: "/data", label: "Data" },
   { href: "/intelligence", label: "Intelligence" },
   { href: "/autopilot", label: "Autopilot" },
   { href: "/audit", label: "Audit Log" },
