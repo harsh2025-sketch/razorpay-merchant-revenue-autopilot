@@ -1,0 +1,50 @@
+name: Task 19D materiality boundary fix
+
+on:
+  push:
+    branches: [task19d/memory-aware-diagnosis]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: ${{ !contains(github.event.head_commit.message, '[task19d-threshold-fixed]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: task19d/memory-aware-diagnosis
+      - name: Fix exact 2pp floating boundary
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('backend/app/services/diagnosis_memory.py')
+          text = path.read_text()
+          old = '''        delta = abs(current - prior)
+                  if delta >= MATERIAL_RATE_DELTA:
+                      reasons.append(f"{key}_delta={delta:.6f}")
+          '''
+          new = '''        delta = abs(current - prior)
+                  if delta > MATERIAL_RATE_DELTA or math.isclose(
+                      delta,
+                      MATERIAL_RATE_DELTA,
+                      rel_tol=0.0,
+                      abs_tol=1e-12,
+                  ):
+                      reasons.append(f"{key}_delta={delta:.6f}")
+          '''
+          if old not in text:
+              raise SystemExit('materiality comparator marker not found')
+          path.write_text(text.replace(old, new, 1))
+          PY
+          git diff --check
+      - name: Commit boundary fix
+        run: |
+          git config user.name "Harsh Dinodia"
+          git config user.email "ghosttalk719@gmail.com"
+          git add backend/app/services/diagnosis_memory.py
+          git diff --cached --check
+          git commit -m "fix: honor exact material evidence threshold [task19d-threshold-fixed]"
+          git push origin HEAD:task19d/memory-aware-diagnosis
