@@ -10,6 +10,12 @@ evidence remains materially unchanged.  The same proposal may be reconsidered
 when the current anomaly has materially moved.  A previous POLICY_REJECTED
 proposal remains blocked regardless of conversion movement because changed
 observational evidence does not make identical policy-unsafe parameters safer.
+
+The prompt payload also includes compact intervention-family exploration facts.
+They do not reveal simulator knowledge or declare a family good or bad; they
+only expose which families have already reached terminal trials for the same
+merchant segment, so an untried allowed family can be preferred when current
+observable evidence reasonably supports one.
 """
 
 from __future__ import annotations
@@ -241,7 +247,30 @@ def build_diagnosis_memory(
 def prompt_memory_payload(
     trials: Sequence[DiagnosisMemoryTrial],
 ) -> list[dict[str, object]]:
-    """Return compact, merchant-visible memory safe for the diagnosis prompt."""
+    """Return compact, merchant-visible memory safe for the diagnosis prompt.
+
+    Existing terminal-trial records remain the payload shape. Exploration facts
+    are additive metadata so older prompt/tests/consumers retain their contract.
+    """
+    if not trials:
+        return []
+
+    family_counts: dict[str, int] = {}
+    for trial in trials:
+        family_counts[trial.intervention_type] = (
+            family_counts.get(trial.intervention_type, 0) + 1
+        )
+    tried_families = sorted(family_counts)
+    family_count_payload = {
+        family: family_counts[family] for family in tried_families
+    }
+    guidance = (
+        "When current observable evidence plausibly supports more than one "
+        "allowed intervention, prefer an untried intervention family before "
+        "another parameter variation of a family that has already ended "
+        "INCONCLUSIVE or ROLLBACK. Never invent evidence just to force novelty."
+    )
+
     return [
         {
             "experiment_id": trial.experiment_id,
@@ -252,6 +281,9 @@ def prompt_memory_payload(
             "p_value": trial.p_value,
             "evidence_materially_changed": trial.evidence_materially_changed,
             "repeat_blocked": trial.repeat_blocked,
+            "tried_intervention_families": tried_families,
+            "terminal_trials_by_family": family_count_payload,
+            "exploration_guidance": guidance,
         }
         for trial in trials
     ]

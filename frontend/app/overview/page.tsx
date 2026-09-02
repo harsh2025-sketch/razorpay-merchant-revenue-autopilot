@@ -1,35 +1,35 @@
 import Link from "next/link";
-import {
-  getDetectionReadiness,
-  getMerchantAudit,
-  getOverview,
-} from "@/lib/api";
+import { getOverview } from "@/lib/api";
 import { getActiveMerchantId } from "@/lib/active-merchant";
-import { DEFAULT_MERCHANT_NAME, RECENT_ACTIVITY_LIMIT } from "@/lib/constants";
+import { DEFAULT_MERCHANT_NAME } from "@/lib/constants";
 import { describeApiError } from "@/lib/errors";
 import { formatInt } from "@/lib/format";
 import { OverviewView } from "@/components/overview-view";
 import { PageHeader } from "@/components/page-header";
 import { InlineError } from "@/components/inline-error";
 import { RetryRefresh } from "@/components/retry-refresh";
-import type { AuditEvent, MerchantOverview } from "@/lib/types";
+import type { MerchantOverview } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
+/**
+ * Keep the first paint on the single critical Overview read. Audit preview and
+ * detector-readiness are auxiliary information and hydrate in parallel on the
+ * client instead of extending server response time through extra Render/DB
+ * round trips. Backend lifecycle rules remain authoritative.
+ */
 export default async function OverviewPage() {
   const merchantId = getActiveMerchantId();
-  const [overviewResult, auditResult, readinessResult] = await Promise.allSettled([
-    getOverview(merchantId),
-    getMerchantAudit(merchantId, RECENT_ACTIVITY_LIMIT),
-    getDetectionReadiness(merchantId),
-  ]);
+  let overview: MerchantOverview;
 
-  if (overviewResult.status === "rejected") {
+  try {
+    overview = await getOverview(merchantId);
+  } catch (reason) {
     return (
       <>
         <PageHeader title="Merchant Overview" subtitle="Revenue optimization console" />
         <InlineError
-          error={describeApiError(overviewResult.reason)}
+          error={describeApiError(reason)}
           onRetry={undefined}
           className="max-w-2xl"
         />
@@ -46,14 +46,6 @@ export default async function OverviewPage() {
     );
   }
 
-  const overview: MerchantOverview = overviewResult.value;
-  const audit: AuditEvent[] =
-    auditResult.status === "fulfilled" ? auditResult.value : [];
-  // Fail open for the UI only if the auxiliary readiness read is unavailable:
-  // the backend detector itself still enforces Task 21B's no-replay rule.
-  const detectionReady =
-    readinessResult.status === "fulfilled" ? readinessResult.value.ready : true;
-
   return (
     <>
       <PageHeader
@@ -61,11 +53,7 @@ export default async function OverviewPage() {
         subtitle="Revenue optimization · Historical payment analysis"
         meta={`${formatInt(overview.metrics.attempts)} payment attempts`}
       />
-      <OverviewView
-        initialOverview={overview}
-        initialAudit={audit}
-        initialDetectionReady={detectionReady}
-      />
+      <OverviewView initialOverview={overview} />
     </>
   );
 }

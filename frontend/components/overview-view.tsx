@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   advanceAutopilot,
   getDetectionReadiness,
@@ -26,12 +26,12 @@ function isOneClickExperimentAction(action: string | null): boolean {
 }
 
 /**
- * Overview client state container. Task 21B tracks detector readiness beside
- * the lifecycle read model so an exhausted historical revision becomes an
- * explicit wait-for-data product state. Task 21C routes TechBazaar runtime /
- * evaluation through one run-to-decision operation. Task 22 keeps uploaded
- * merchants out of that sealed synthetic evaluation world and presents an
- * explicit wait-for-real-outcomes state instead.
+ * Overview client state container.
+ *
+ * The server sends the critical merchant Overview first. Audit preview and
+ * detector readiness are hydrated afterwards so slow auxiliary reads never
+ * delay the useful first paint. Mutations still perform a full uncached refresh
+ * before the next user action is exposed.
  */
 export function OverviewView({
   initialOverview,
@@ -39,13 +39,15 @@ export function OverviewView({
   initialDetectionReady,
 }: {
   initialOverview: MerchantOverview;
-  initialAudit: AuditEvent[];
-  initialDetectionReady: boolean;
+  initialAudit?: AuditEvent[];
+  initialDetectionReady?: boolean;
 }) {
   const merchantId = initialOverview.merchant.merchant_id;
   const [overview, setOverview] = useState(initialOverview);
-  const [audit, setAudit] = useState(initialAudit);
-  const [detectionReady, setDetectionReady] = useState(initialDetectionReady);
+  const [audit, setAudit] = useState<AuditEvent[]>(initialAudit ?? []);
+  const [detectionReady, setDetectionReady] = useState(
+    initialDetectionReady ?? true,
+  );
   const [actionLoading, setActionLoading] = useState(false);
   const [restartLoading, setRestartLoading] = useState(false);
   const [restartAvailable, setRestartAvailable] = useState(false);
@@ -56,6 +58,26 @@ export function OverviewView({
   );
   const [stepMessage, setStepMessage] = useState<string | null>(null);
   const [viewCycleHref, setViewCycleHref] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (initialAudit !== undefined && initialDetectionReady !== undefined) return;
+
+    let active = true;
+    void Promise.allSettled([
+      getMerchantAudit(merchantId, RECENT_ACTIVITY_LIMIT),
+      getDetectionReadiness(merchantId),
+    ]).then(([auditResult, readinessResult]) => {
+      if (!active) return;
+      if (auditResult.status === "fulfilled") setAudit(auditResult.value);
+      if (readinessResult.status === "fulfilled") {
+        setDetectionReady(readinessResult.value.ready);
+      }
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [initialAudit, initialDetectionReady, merchantId]);
 
   const status = overview.autopilot_status;
   const waitingForData =
@@ -229,35 +251,52 @@ export function OverviewView({
 
       <section
         aria-label="Merchant metrics"
-        className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-gray-200 bg-gray-100 lg:grid-cols-4"
+        className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-slate-200 bg-slate-200 shadow-[0_10px_35px_rgba(15,23,42,0.05)] lg:grid-cols-4"
       >
-        <div className="bg-white">
+        <div className="bg-gradient-to-br from-white to-indigo-50/35">
           <MetricCell
             label="Baseline Conversion"
             value={formatPercent(metrics.conversion_rate)}
             sub={`${formatInt(metrics.captured)} of ${formatInt(metrics.attempts)} captured`}
           />
         </div>
-        <div className="bg-white">
+        <div className="bg-gradient-to-br from-white to-emerald-50/30">
           <MetricCell
             label="Captured GMV"
             value={formatInrPaise(overview.captured_gmv_paise)}
             sub={`of ${formatInrPaise(overview.attempted_gmv_paise)} attempted`}
           />
         </div>
-        <div className="bg-white">
+        <div className="bg-gradient-to-br from-white to-amber-50/30">
           <MetricCell
             label="Weakest Segment"
             value={weakest ? formatPercent(weakest.conversion_rate) : "-"}
             sub={weakest ? weakest.segment : "No segment data"}
           />
         </div>
-        <div className="bg-white">
+        <div className="bg-gradient-to-br from-white to-sky-50/40">
           <MetricCell
             label="Active Cycle"
             value={activeCycleValue}
             sub={activeCycleSub}
           />
+        </div>
+      </section>
+
+      <section
+        aria-label="Autopilot trust chain"
+        className="overflow-hidden rounded-xl border border-slate-200 bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-950 px-4 py-3 shadow-[0_10px_30px_rgba(30,41,59,0.12)]"
+      >
+        <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-300 sm:justify-between">
+          <span className="text-white">Evidence</span>
+          <span className="text-indigo-400">→</span>
+          <span>AI proposes</span>
+          <span className="text-indigo-400">→</span>
+          <span>Policy authorizes</span>
+          <span className="text-indigo-400">→</span>
+          <span>Razorpay executes</span>
+          <span className="text-indigo-400">→</span>
+          <span className="text-white">Statistics decides</span>
         </div>
       </section>
 
