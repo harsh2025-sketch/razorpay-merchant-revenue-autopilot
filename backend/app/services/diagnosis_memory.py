@@ -11,11 +11,11 @@ when the current anomaly has materially moved.  A previous POLICY_REJECTED
 proposal remains blocked regardless of conversion movement because changed
 observational evidence does not make identical policy-unsafe parameters safer.
 
-The prompt payload also includes a compact intervention-family exploration
-summary. It does not reveal any simulator knowledge or declare a family good or
-bad; it simply tells the model which intervention families have already reached
-terminal trials for the same merchant segment so an untried allowed family can
-be preferred when the current observable evidence reasonably supports one.
+The prompt payload also includes compact intervention-family exploration facts.
+They do not reveal simulator knowledge or declare a family good or bad; they
+only expose which families have already reached terminal trials for the same
+merchant segment, so an untried allowed family can be preferred when current
+observable evidence reasonably supports one.
 """
 
 from __future__ import annotations
@@ -249,9 +249,8 @@ def prompt_memory_payload(
 ) -> list[dict[str, object]]:
     """Return compact, merchant-visible memory safe for the diagnosis prompt.
 
-    The first record is an exploration summary when history exists. It contains
-    only persisted terminal-history facts and general guidance; it has no
-    simulator labels, expected lift, or hidden intervention ranking.
+    Existing terminal-trial records remain the payload shape. Exploration facts
+    are additive metadata so older prompt/tests/consumers retain their contract.
     """
     if not trials:
         return []
@@ -261,25 +260,19 @@ def prompt_memory_payload(
         family_counts[trial.intervention_type] = (
             family_counts.get(trial.intervention_type, 0) + 1
         )
+    tried_families = sorted(family_counts)
+    family_count_payload = {
+        family: family_counts[family] for family in tried_families
+    }
+    guidance = (
+        "When current observable evidence plausibly supports more than one "
+        "allowed intervention, prefer an untried intervention family before "
+        "another parameter variation of a family that has already ended "
+        "INCONCLUSIVE or ROLLBACK. Never invent evidence just to force novelty."
+    )
 
-    payload: list[dict[str, object]] = [
+    return [
         {
-            "memory_kind": "exploration_summary",
-            "tried_intervention_families": sorted(family_counts),
-            "terminal_trials_by_family": {
-                family: family_counts[family] for family in sorted(family_counts)
-            },
-            "guidance": (
-                "When current observable evidence plausibly supports more than one "
-                "allowed intervention, prefer an untried intervention family before "
-                "another parameter variation of a family that has already ended "
-                "INCONCLUSIVE or ROLLBACK. Never invent evidence just to force novelty."
-            ),
-        }
-    ]
-    payload.extend(
-        {
-            "memory_kind": "terminal_trial",
             "experiment_id": trial.experiment_id,
             "intervention_type": trial.intervention_type,
             "intervention_params": dict(trial.intervention_params),
@@ -288,10 +281,12 @@ def prompt_memory_payload(
             "p_value": trial.p_value,
             "evidence_materially_changed": trial.evidence_materially_changed,
             "repeat_blocked": trial.repeat_blocked,
+            "tried_intervention_families": tried_families,
+            "terminal_trials_by_family": family_count_payload,
+            "exploration_guidance": guidance,
         }
         for trial in trials
-    )
-    return payload
+    ]
 
 
 def stale_repeat_reason(
