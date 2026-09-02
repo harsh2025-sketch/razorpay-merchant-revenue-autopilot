@@ -44,16 +44,19 @@ export function TopNav() {
     return () => window.removeEventListener("mra:merchant-changed", refreshMerchant);
   }, []);
 
-  const demoMode = merchantId === DEFAULT_MERCHANT_ID;
+  const demoWorkspace = merchantId === DEFAULT_MERCHANT_ID;
 
   return (
-    <header className="sticky top-0 z-30 border-b border-gray-200 bg-white">
-      <div className="mx-auto flex h-[60px] w-full max-w-[1320px] items-center gap-6 px-4 sm:px-8">
+    <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/90 shadow-[0_1px_18px_rgba(15,23,42,0.035)] backdrop-blur-xl">
+      <div className="mx-auto flex h-[62px] w-full max-w-[1320px] items-center gap-6 px-4 sm:px-8">
         <Link
           href="/overview"
-          className="shrink-0 text-[15px] font-semibold tracking-tight text-gray-900"
+          className="group flex shrink-0 items-center gap-2.5 text-[15px] font-semibold tracking-tight text-gray-900"
         >
-          Revenue Autopilot
+          <span className="relative flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 via-violet-500 to-sky-500 shadow-sm shadow-indigo-200">
+            <span className="h-2 w-2 rounded-full bg-white shadow-[0_0_0_3px_rgba(255,255,255,0.18)]" />
+          </span>
+          <span>Revenue Autopilot</span>
         </Link>
         <nav aria-label="Primary" className="hidden items-stretch self-stretch sm:flex">
           {NAV_LINKS.map((link) => {
@@ -65,7 +68,7 @@ export function TopNav() {
                 aria-current={active ? "page" : undefined}
                 className={`relative flex items-center px-3 text-[13.5px] transition-colors ${
                   active
-                    ? "font-medium text-gray-900"
+                    ? "font-medium text-gray-950"
                     : "text-gray-500 hover:text-gray-900"
                 }`}
               >
@@ -73,7 +76,7 @@ export function TopNav() {
                 {active && (
                   <span
                     aria-hidden
-                    className="absolute inset-x-2.5 bottom-[-1px] h-0.5 rounded-full bg-indigo-600"
+                    className="absolute inset-x-2.5 bottom-[-1px] h-0.5 rounded-full bg-gradient-to-r from-indigo-500 to-sky-500"
                   />
                 )}
               </Link>
@@ -85,17 +88,23 @@ export function TopNav() {
             {merchantName}
           </span>
           <span
-            className={`inline-flex items-center rounded border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${
-              demoMode
-                ? "border-amber-200 bg-amber-50 text-amber-700"
+            className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] ${
+              demoWorkspace
+                ? "border-indigo-200 bg-indigo-50 text-indigo-700"
                 : "border-emerald-200 bg-emerald-50 text-emerald-700"
             }`}
           >
-            {demoMode ? "Demo Data" : "Merchant Data"}
+            <span
+              aria-hidden
+              className={`h-1.5 w-1.5 rounded-full ${
+                demoWorkspace ? "bg-indigo-500" : "bg-emerald-500"
+              }`}
+            />
+            {demoWorkspace ? "Demo/Test" : "Merchant"}
           </span>
           <Link
             href="/onboarding"
-            className="rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-[12px] font-medium text-gray-700 hover:bg-gray-50"
+            className="rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-[12px] font-medium text-gray-700 shadow-sm transition-colors hover:border-gray-400 hover:bg-gray-50"
           >
             Switch
           </Link>
