@@ -63,7 +63,7 @@ def test_persistence_duplicate_counts_denominator_and_no_commit(db, monkeypatch)
     s.add(PaymentAttempt(merchant_id="m",variant="control",status="captured",amount=1,created_at=base+timedelta(days=1)))
     s.flush(); calls=[]; monkeypatch.setattr(s,"commit",lambda: calls.append(1))
     r=evaluate_experiment_results(s,x.id); assert calls==[] and r.control_count==2 and r.treatment_count==2 and r.control_conversions==1
-    assert x.status=="completed" and x.ended_at==base+timedelta(seconds=3)
+    assert x.status=="completed" and x.ended_at==r.decided_at and x.ended_at>base+timedelta(days=1)
     assert evaluate_experiment_results(s,x.id).id==r.id and s.query(ExperimentResult).count()==1
 
 def test_insufficient_does_not_finalize(db):

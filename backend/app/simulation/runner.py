@@ -2,6 +2,8 @@
 
 Simulates merchant traffic locally. Does not call Razorpay, OpenAI, or
 re-evaluate merchant policy. Does not compute statistics or decide winners.
+Synthetic event timestamps stay anchored for reproducibility, while the
+Experiment lifecycle timestamps reflect when the product actually ran.
 """
 
 from __future__ import annotations
@@ -277,7 +279,11 @@ def run_experiment_batch(
     if experiment.status == "approved":
         experiment.status = "running"
         if experiment.started_at is None:
-            experiment.started_at = RUNTIME_ANCHOR
+            lifecycle_started_at = datetime.now(timezone.utc)
+            created_at = _ensure_utc(experiment.created_at)
+            if created_at is not None and lifecycle_started_at < created_at:
+                lifecycle_started_at = created_at
+            experiment.started_at = lifecycle_started_at
         record_audit_event_once(
             db,
             merchant_id=experiment.merchant_id,

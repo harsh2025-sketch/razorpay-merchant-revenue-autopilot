@@ -1,7 +1,10 @@
 """Metric engine - deterministic, database-backed, merchant-visible.
 
-This module computes payment metrics from PaymentAttempt rows only.
-It operates solely on observable database data.
+This module computes merchant-facing payment metrics from historical
+PaymentAttempt rows only. Experiment runtime traffic is deliberately excluded
+(``experiment_id IS NULL`` is required) so simulated control/treatment samples
+can never change the merchant baseline shown on Overview or used for portfolio
+sizing.
 """
 
 from __future__ import annotations
@@ -107,10 +110,12 @@ def get_overall_metrics(
     db: Session,
     merchant_id: str,
 ) -> ConversionMetrics:
-    """Compute overall conversion metrics for a merchant."""
-    # Use SQL aggregation for efficiency
+    """Compute historical conversion metrics for a merchant."""
+    # Use SQL aggregation for efficiency. Experimental observations are not
+    # merchant baseline evidence and therefore never enter this read model.
     total = db.query(func.count(PaymentAttempt.id)).filter(
-        PaymentAttempt.merchant_id == merchant_id
+        PaymentAttempt.merchant_id == merchant_id,
+        PaymentAttempt.experiment_id.is_(None),
     ).scalar() or 0
 
     if total == 0:
@@ -125,7 +130,10 @@ def get_overall_metrics(
     # Group by status in one query
     rows = (
         db.query(PaymentAttempt.status, func.count(PaymentAttempt.id))
-        .filter(PaymentAttempt.merchant_id == merchant_id)
+        .filter(
+            PaymentAttempt.merchant_id == merchant_id,
+            PaymentAttempt.experiment_id.is_(None),
+        )
         .group_by(PaymentAttempt.status)
         .all()
     )
@@ -154,7 +162,7 @@ def get_segment_metrics(
     db: Session,
     merchant_id: str,
 ) -> List[SegmentMetrics]:
-    """Compute metrics per segment, sorted by segment name."""
+    """Compute historical metrics per segment, sorted by segment name."""
     # Aggregate per segment using CASE
     # SELECT segment, count(*), sum(captured), etc., sum(amount), sum(captured amount)
     query = (
@@ -168,6 +176,7 @@ def get_segment_metrics(
             func.sum(case((PaymentAttempt.status == "captured", PaymentAttempt.amount), else_=0)).label("captured_gmv"),
         )
         .filter(PaymentAttempt.merchant_id == merchant_id)
+        .filter(PaymentAttempt.experiment_id.is_(None))
         .filter(PaymentAttempt.segment.is_not(None))
         .group_by(PaymentAttempt.segment)
         .order_by(PaymentAttempt.segment.asc())
@@ -212,7 +221,7 @@ def get_payment_method_metrics(
     *,
     segment: str | None = None,
 ) -> List[PaymentMethodMetrics]:
-    """Compute payment-method metrics, optionally filtered by segment.
+    """Compute historical payment-method metrics, optionally by segment.
 
     Deterministic ordering: upi, card, netbanking, wallet, then unknown sorted.
     """
@@ -222,7 +231,10 @@ def get_payment_method_metrics(
         func.sum(case((PaymentAttempt.status == "captured", 1), else_=0)).label("captured"),
         func.sum(case((PaymentAttempt.status == "failed", 1), else_=0)).label("failed"),
         func.sum(case((PaymentAttempt.status == "abandoned", 1), else_=0)).label("abandoned"),
-    ).filter(PaymentAttempt.merchant_id == merchant_id)
+    ).filter(
+        PaymentAttempt.merchant_id == merchant_id,
+        PaymentAttempt.experiment_id.is_(None),
+    )
 
     if segment is not None:
         q = q.filter(PaymentAttempt.segment == segment)
@@ -267,10 +279,11 @@ def get_failure_reason_counts(
     *,
     segment: str | None = None,
 ) -> Dict[str, int]:
-    """Count failure reasons for failed attempts only."""
+    """Count historical failure reasons for failed attempts only."""
     q = (
         db.query(PaymentAttempt.failure_reason, func.count(PaymentAttempt.id))
         .filter(PaymentAttempt.merchant_id == merchant_id)
+        .filter(PaymentAttempt.experiment_id.is_(None))
         .filter(PaymentAttempt.status == "failed")
     )
 
@@ -294,13 +307,14 @@ def get_amount_bucket_metrics(
     db: Session,
     merchant_id: str,
 ) -> List[AmountBucketMetrics]:
-    """Compute metrics per fixed amount bucket, ascending monetary order."""
+    """Compute historical metrics per fixed amount bucket."""
     results: List[AmountBucketMetrics] = []
 
     for label, min_paise, max_paise in BUCKET_DEFINITIONS:
         # Build query for this bucket
         base_q = db.query(func.count(PaymentAttempt.id)).filter(
             PaymentAttempt.merchant_id == merchant_id,
+            PaymentAttempt.experiment_id.is_(None),
             PaymentAttempt.amount >= min_paise,
         )
         if max_paise is not None:
@@ -310,6 +324,7 @@ def get_amount_bucket_metrics(
 
         captured_q = db.query(func.count(PaymentAttempt.id)).filter(
             PaymentAttempt.merchant_id == merchant_id,
+            PaymentAttempt.experiment_id.is_(None),
             PaymentAttempt.status == "captured",
             PaymentAttempt.amount >= min_paise,
         )
