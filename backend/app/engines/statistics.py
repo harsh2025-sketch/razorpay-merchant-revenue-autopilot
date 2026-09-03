@@ -60,11 +60,6 @@ def evaluate_conversion_experiment(*, experiment_id: str, control_count: int,
         confidence_interval_lower=lift-margin, confidence_interval_upper=lift+margin,
         is_significant=significant, decision=decision)
 
-def _utc(value: datetime) -> datetime:
-    if value.tzinfo is None:
-        return value.replace(tzinfo=timezone.utc)
-    return value.astimezone(timezone.utc)
-
 def evaluate_experiment_results(db: Session, experiment_id: str) -> ExperimentResult:
     existing = db.scalar(select(ExperimentResult).where(ExperimentResult.experiment_id == experiment_id))
     if existing is not None:
@@ -89,9 +84,11 @@ def evaluate_experiment_results(db: Session, experiment_id: str) -> ExperimentRe
     result = ExperimentResult(**evaluation.model_dump(), decided_at=decided_at)
     db.add(result)
     experiment.status = "completed"
-    timestamps = [a.created_at for a in control + treatment if a.created_at is not None]
-    if timestamps:
-        experiment.ended_at = max((_utc(t) for t in timestamps))
+    # PaymentAttempt timestamps may be anchored to a deterministic simulator
+    # clock. The Experiment lifecycle must instead record when the statistical
+    # decision actually happened so product history cannot appear to end before
+    # the experiment was created.
+    experiment.ended_at = decided_at
     db.flush()
     record_audit_event_once(
         db,
