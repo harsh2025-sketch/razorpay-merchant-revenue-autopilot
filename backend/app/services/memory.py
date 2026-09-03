@@ -14,7 +14,7 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 from sqlalchemy.orm import Session
@@ -108,6 +108,44 @@ def treatment_config_fingerprint(config: dict[str, Any]) -> str:
     """Return a stable SHA-256 fingerprint for an experiment treatment config."""
     canonical = json.dumps(config, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def _as_utc(value: datetime | None) -> datetime | None:
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
+
+
+def _lifecycle_times(
+    experiment: Experiment,
+    result: ExperimentResult | None,
+) -> tuple[datetime, datetime | None, datetime | None]:
+    """Return chronological product lifecycle times, including legacy rows.
+
+    Older demo experiments used the deterministic simulator clock for
+    ``started_at``/``ended_at``. Statistical ``decided_at`` was always the real
+    product timestamp, so terminal memory can repair those legacy projections
+    without mutating historical database rows. New experiments already persist
+    correct lifecycle times at write time.
+    """
+    created_at = _as_utc(experiment.created_at)
+    assert created_at is not None
+
+    started_at = _as_utc(experiment.started_at)
+    if started_at is not None and started_at < created_at:
+        started_at = created_at
+
+    if result is not None:
+        ended_at = _as_utc(result.decided_at)
+    else:
+        ended_at = _as_utc(experiment.ended_at)
+
+    floor = started_at or created_at
+    if ended_at is not None and ended_at < floor:
+        ended_at = floor
+    return created_at, started_at, ended_at
 
 
 def _latest_policy_rows(db: Session, experiment_ids: list[str]) -> dict[str, PolicyDecision]:
@@ -259,6 +297,7 @@ def get_merchant_experiment_memory(
         resource = resources.get(experiment.id)
         config = dict(experiment.treatment_config or {})
         violations = tuple(str(value) for value in ((policy.violations if policy else None) or []))
+        created_at, started_at, ended_at = _lifecycle_times(experiment, result)
         records.append(
             ExperimentMemoryRecord(
                 experiment_id=experiment.id,
@@ -285,9 +324,9 @@ def get_merchant_experiment_memory(
                 is_significant=result.is_significant if result is not None else None,
                 treatment_resource_status=resource.status if resource is not None else None,
                 terminal_reason=_terminal_reason(experiment, policy, result),
-                created_at=experiment.created_at,
-                started_at=experiment.started_at,
-                ended_at=experiment.ended_at,
+                created_at=created_at,
+                started_at=started_at,
+                ended_at=ended_at,
             )
         )
 
