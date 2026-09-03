@@ -2,12 +2,12 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { OverviewView } from "@/components/overview-view";
-import { makeOverview } from "./fixtures";
+import { makeAuditEvent, makeOverview } from "./fixtures";
 
 /**
- * Integration-style test for the focused Overview mutation loop: one click →
- * exactly one POST to the autopilot step → overview/readiness refetched →
- * "View cycle" link appears for an opportunity entity.
+ * Integration-style test for the Overview mutation loop: one click → exactly
+ * one POST to the autopilot step → overview + recent audit/readiness refetched
+ * → "View cycle" link appears for an opportunity entity.
  */
 
 const overviewA = makeOverview();
@@ -18,6 +18,7 @@ const overviewB = makeOverview({
     next_action: "DIAGNOSE_OPPORTUNITY",
   },
 });
+const audit = [makeAuditEvent()];
 const readiness = {
   merchant_id: "merchant_techbazaar",
   ready: true,
@@ -60,6 +61,7 @@ describe("OverviewView action loop", () => {
       if (url.includes("/overview")) {
         return Promise.resolve(jsonResponse(overviewB));
       }
+      if (url.includes("/audit")) return Promise.resolve(jsonResponse(audit));
       return Promise.reject(new Error(`unexpected fetch ${url}`));
     });
     vi.stubGlobal("fetch", fetchMock);
@@ -75,17 +77,14 @@ describe("OverviewView action loop", () => {
             latest_experiment_status: null,
           },
         })}
+        initialAudit={audit}
         initialDetectionReady
       />,
     );
 
     expect(screen.getByText("Baseline Conversion")).toBeInTheDocument();
+    expect(screen.getByText("Weakest Segment")).toBeInTheDocument();
     expect(screen.getByText("Captured GMV")).toBeInTheDocument();
-    expect(screen.getByText("Active Cycle")).toBeInTheDocument();
-    expect(screen.getByText("Segment Conversion")).toBeInTheDocument();
-    expect(screen.queryByText("Weakest Segment")).not.toBeInTheDocument();
-    expect(screen.queryByText("Payment Method Performance")).not.toBeInTheDocument();
-    expect(screen.queryByText("Recent Activity")).not.toBeInTheDocument();
 
     const stepCallsBefore = fetchMock.mock.calls.filter(([u]) =>
       String(u).includes("/autopilot/step"),
@@ -135,6 +134,7 @@ describe("OverviewView action loop", () => {
       if (url.includes("/overview")) {
         return Promise.resolve(jsonResponse(overviewA));
       }
+      if (url.includes("/audit")) return Promise.resolve(jsonResponse(audit));
       return Promise.reject(new Error(`unexpected fetch ${url}`));
     });
     vi.stubGlobal("fetch", fetchMock);
@@ -148,6 +148,7 @@ describe("OverviewView action loop", () => {
             next_action: "DIAGNOSE_OPPORTUNITY",
           },
         })}
+        initialAudit={audit}
         initialDetectionReady
       />,
     );
