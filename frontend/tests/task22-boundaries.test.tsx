@@ -17,13 +17,15 @@ describe("Task 22 uploaded-merchant experiment boundary", () => {
 
     expect(
       screen.getByText(
-        "Treatment is deployed. This uploaded merchant is awaiting assigned real experiment outcomes.",
+        "Treatment deployed. Waiting for assigned live experiment outcomes.",
       ),
     ).toBeInTheDocument();
     expect(screen.getByRole("status")).toHaveTextContent("Awaiting live outcomes");
     expect(screen.queryByRole("button", { name: "Run Experiment" })).toBeNull();
     expect(
-      screen.getByText(/No TechBazaar synthetic customer traffic will be generated/),
+      screen.getByText(
+        "Control and treatment outcomes must arrive from real payment events before statistics can run.",
+      ),
     ).toBeInTheDocument();
   });
 
