@@ -437,15 +437,18 @@ def experiment_progress(db: Session, experiment: Experiment) -> dict[str, Any]:
 
 
 def gmv_totals(db: Session, merchant_id: str) -> tuple[int, int]:
-    """(attempted, captured) gross merchandise value in paise.
+    """Historical (attempted, captured) GMV in paise for the merchant.
 
-    Direct observable aggregation over ``PaymentAttempt`` rows. The metric
-    engine exposes GMV per segment only, and no revenue-loss estimate is
-    derived from these numbers anywhere in this layer.
+    Only merchant evidence (``experiment_id IS NULL``) belongs in Overview
+    baseline GMV. Control/treatment runtime rows remain available to experiment
+    statistics but cannot inflate historical merchant performance.
     """
     attempted = (
         db.query(func.sum(PaymentAttempt.amount))
-        .filter(PaymentAttempt.merchant_id == merchant_id)
+        .filter(
+            PaymentAttempt.merchant_id == merchant_id,
+            PaymentAttempt.experiment_id.is_(None),
+        )
         .scalar()
     )
     captured = (
@@ -454,7 +457,10 @@ def gmv_totals(db: Session, merchant_id: str) -> tuple[int, int]:
                 case((PaymentAttempt.status == "captured", PaymentAttempt.amount), else_=0)
             )
         )
-        .filter(PaymentAttempt.merchant_id == merchant_id)
+        .filter(
+            PaymentAttempt.merchant_id == merchant_id,
+            PaymentAttempt.experiment_id.is_(None),
+        )
         .scalar()
     )
     return int(attempted or 0), int(captured or 0)
