@@ -1,6 +1,13 @@
 import type { Metadata } from "next";
+import { Source_Sans_3 } from "next/font/google";
 import { AppShell } from "@/components/app-shell";
 import "./globals.css";
+
+const sourceSans = Source_Sans_3({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-source-sans",
+});
 
 export const metadata: Metadata = {
   title: "Revenue Autopilot",
@@ -8,17 +15,14 @@ export const metadata: Metadata = {
     "Merchant revenue optimization console: observed evidence, AI proposals, deterministic policy, an explicit Razorpay execution boundary, and fixed-horizon statistics.",
 };
 
-/**
- * Typography: one sans-serif family. Inter is used when installed locally;
- * the tailwind stack falls back to clean system sans-serifs so the build
- * never depends on a font CDN.
- */
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body className="bg-slate-50 font-sans text-gray-900 antialiased">
+      <body
+        className={`${sourceSans.variable} bg-slate-50 font-sans text-gray-900 antialiased`}
+      >
         <AppShell>{children}</AppShell>
       </body>
     </html>
