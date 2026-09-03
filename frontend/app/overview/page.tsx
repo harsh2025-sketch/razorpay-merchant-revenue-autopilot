@@ -10,11 +10,13 @@ import { InlineError } from "@/components/inline-error";
 import { RetryRefresh } from "@/components/retry-refresh";
 import type { MerchantOverview } from "@/lib/types";
 
+export const dynamic = "force-dynamic";
+
 /**
- * Render the critical Overview read first. Merchant selection keeps this route
- * request-aware through cookies, while the read itself may use the short
- * server cache configured in lib/api.ts. Client-side mutations always refresh
- * with uncached browser requests.
+ * Keep the first paint on the single critical Overview read. Audit preview and
+ * detector-readiness are auxiliary information and hydrate in parallel on the
+ * client instead of extending server response time through extra Render/DB
+ * round trips. Backend lifecycle rules remain authoritative.
  */
 export default async function OverviewPage() {
   const merchantId = getActiveMerchantId();
