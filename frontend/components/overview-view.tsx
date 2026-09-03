@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { ChevronRight } from "lucide-react";
 import {
   advanceAutopilot,
   getDetectionReadiness,
@@ -20,6 +21,34 @@ import { MetricCell } from "./metric-cell";
 import { PaymentMethodTable } from "./payment-method-table";
 import { RecentActivity } from "./recent-activity";
 import { SegmentConversionChart } from "./segment-conversion-chart";
+
+const OVERVIEW_STEPS = [
+  "Evidence",
+  "AI Proposes",
+  "Policy",
+  "Execute",
+  "Statistics",
+] as const;
+
+function activeOverviewStep(state: AutopilotState): number {
+  switch (state) {
+    case "IDLE":
+      return 0;
+    case "HYPOTHESIS_PENDING":
+    case "EXPERIMENT_PENDING":
+      return 1;
+    case "POLICY_REVIEW_PENDING":
+    case "POLICY_REJECTED":
+      return 2;
+    case "DEPLOYMENT_PENDING":
+    case "DEPLOYMENT_BLOCKED":
+      return 3;
+    case "RUNNING":
+    case "EVALUATION_PENDING":
+    case "COMPLETED":
+      return 4;
+  }
+}
 
 function isOneClickExperimentAction(action: string | null): boolean {
   return action === "RUN_EXPERIMENT_BATCH" || action === "EVALUATE_EXPERIMENT";
@@ -216,6 +245,7 @@ export function OverviewView({
         : `${formatInt(status.active_experiment_count)} active experiment${
             status.active_experiment_count === 1 ? "" : "s"
           }`;
+  const activeStep = activeOverviewStep(status.state);
 
   return (
     <div className="space-y-5">
@@ -251,30 +281,30 @@ export function OverviewView({
 
       <section
         aria-label="Merchant metrics"
-        className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-slate-200 bg-slate-200 shadow-[0_10px_35px_rgba(15,23,42,0.05)] lg:grid-cols-4"
+        className="grid grid-cols-2 overflow-hidden rounded-lg border border-gray-200 bg-white lg:grid-cols-4"
       >
-        <div className="bg-gradient-to-br from-white to-indigo-50/35">
+        <div className="border-b border-r border-gray-200 bg-white lg:border-b-0">
           <MetricCell
             label="Baseline Conversion"
             value={formatPercent(metrics.conversion_rate)}
             sub={`${formatInt(metrics.captured)} of ${formatInt(metrics.attempts)} captured`}
           />
         </div>
-        <div className="bg-gradient-to-br from-white to-emerald-50/30">
+        <div className="border-b border-gray-200 bg-white lg:border-b-0 lg:border-r">
           <MetricCell
             label="Captured GMV"
             value={formatInrPaise(overview.captured_gmv_paise)}
             sub={`of ${formatInrPaise(overview.attempted_gmv_paise)} attempted`}
           />
         </div>
-        <div className="bg-gradient-to-br from-white to-amber-50/30">
+        <div className="border-r border-gray-200 bg-white">
           <MetricCell
             label="Weakest Segment"
             value={weakest ? formatPercent(weakest.conversion_rate) : "-"}
             sub={weakest ? weakest.segment : "No segment data"}
           />
         </div>
-        <div className="bg-gradient-to-br from-white to-sky-50/40">
+        <div className="bg-white">
           <MetricCell
             label="Active Cycle"
             value={activeCycleValue}
@@ -284,20 +314,29 @@ export function OverviewView({
       </section>
 
       <section
-        aria-label="Autopilot trust chain"
-        className="overflow-hidden rounded-xl border border-slate-200 bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-950 px-4 py-3 shadow-[0_10px_30px_rgba(30,41,59,0.12)]"
+        aria-label="Autopilot lifecycle"
+        className="rounded-lg border border-gray-200 bg-white px-4 py-3"
       >
-        <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-300 sm:justify-between">
-          <span className="text-white">Evidence</span>
-          <span className="text-indigo-400">→</span>
-          <span>AI proposes</span>
-          <span className="text-indigo-400">→</span>
-          <span>Policy authorizes</span>
-          <span className="text-indigo-400">→</span>
-          <span>Razorpay executes</span>
-          <span className="text-indigo-400">→</span>
-          <span className="text-white">Statistics decides</span>
-        </div>
+        <ol className="flex flex-wrap items-center gap-y-2 text-[12.5px] font-medium">
+          {OVERVIEW_STEPS.map((step, index) => (
+            <li key={step} className="flex items-center">
+              <span
+                aria-current={index === activeStep ? "step" : undefined}
+                className={index === activeStep ? "text-[#2B84EA]" : "text-gray-500"}
+              >
+                {step}
+              </span>
+              {index < OVERVIEW_STEPS.length - 1 && (
+                <ChevronRight
+                  size={14}
+                  strokeWidth={1.5}
+                  aria-hidden
+                  className="mx-2.5 text-gray-300"
+                />
+              )}
+            </li>
+          ))}
+        </ol>
       </section>
 
       <div className="grid gap-5 xl:grid-cols-5">

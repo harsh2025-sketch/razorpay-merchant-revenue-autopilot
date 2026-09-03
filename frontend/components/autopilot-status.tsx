@@ -12,6 +12,19 @@ import { AutopilotActorStrip } from "./autopilot-actor-strip";
 import { LoadingButton } from "./loading-button";
 import { PrimaryAutopilotAction } from "./primary-autopilot-action";
 
+function completedStatusSentence(decision: StatisticalDecision | null): string {
+  switch (decision) {
+    case "KEEP":
+      return "Cycle complete · treatment kept.";
+    case "ROLLBACK":
+      return "Cycle complete · treatment rolled back.";
+    case "INCONCLUSIVE":
+      return "Cycle complete · result inconclusive.";
+    default:
+      return "Cycle complete.";
+  }
+}
+
 /** Overview Autopilot status surface. */
 export function AutopilotStatus({
   state,
@@ -41,10 +54,12 @@ export function AutopilotStatus({
   onStartNewCycle?: () => void;
 }) {
   const sentence = waitingForData
-    ? "The current evidence revision is exhausted. Add new payment data before another optimization scan."
+    ? "Current evidence is exhausted. Add new payment data to continue."
     : waitingForLiveOutcomes
-      ? "Treatment is deployed. This uploaded merchant is awaiting assigned real experiment outcomes."
-      : autopilotStatusSentence(state, latestDecision);
+      ? "Treatment deployed. Waiting for assigned live experiment outcomes."
+      : state === "COMPLETED"
+        ? completedStatusSentence(latestDecision)
+        : autopilotStatusSentence(state, latestDecision);
   const actor = nextAction ? ACTION_ACTORS[nextAction] : null;
   const terminalCycle = nextAction === "DONE" || nextAction === "STOP";
   const undeployedCycle =
@@ -64,14 +79,14 @@ export function AutopilotStatus({
           <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-gray-500">
             Autopilot
           </p>
-          <p className="mt-1 max-w-3xl text-[19px] font-semibold leading-snug text-gray-900">
+          <p className="mt-1 max-w-3xl text-[19px] font-semibold leading-snug text-[#111827]">
             {sentence}
           </p>
-          <p className="mt-1.5 text-[13px] text-gray-500">
+          <p className="mt-1.5 text-[13px] text-[#6B7280]">
             {waitingForData ? (
-              "Historical transactions are preserved, but they will not be replayed as new evidence."
+              "Historical transactions stay preserved and are not replayed as new evidence."
             ) : waitingForLiveOutcomes ? (
-              "No TechBazaar synthetic customer traffic will be generated for this merchant. A production payment-event integration must supply control and treatment outcomes before statistics can run."
+              "Control and treatment outcomes must arrive from real payment events before statistics can run."
             ) : actor ? (
               <>
                 Next step · <span className="font-medium text-gray-700">{actor}</span>
@@ -82,7 +97,7 @@ export function AutopilotStatus({
                 )}
               </>
             ) : terminalCycle ? (
-              "This cycle is closed. Historical evidence remains available."
+              "Cycle closed. Historical evidence remains available."
             ) : (
               "No pending Autopilot step"
             )}

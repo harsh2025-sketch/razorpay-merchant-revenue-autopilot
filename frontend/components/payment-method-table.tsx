@@ -11,23 +11,18 @@ export function PaymentMethodTable({
 }) {
   return (
     <section className="rounded-lg border border-gray-200 bg-white p-5">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h2 className="text-[16px] font-semibold text-gray-900">
-            Payment Method Performance
-          </h2>
-          <p className="mt-0.5 text-[13px] text-gray-500">
-            Historical attempts by payment method.
-          </p>
-        </div>
-        <p className="shrink-0 text-[11px] uppercase tracking-wider text-gray-400">
-          Observed
+      <div>
+        <h2 className="text-[16px] font-semibold text-gray-900">
+          Payment Method Performance
+        </h2>
+        <p className="mt-0.5 text-[13px] text-gray-500">
+          Historical attempts by payment method.
         </p>
       </div>
       <div className="mt-3 overflow-x-auto">
         <table className="w-full min-w-[380px] text-[13px]">
           <thead>
-            <tr className="border-b border-gray-100 text-left text-[11px] uppercase tracking-wider text-gray-400">
+            <tr className="border-b border-gray-100 text-left text-[12px] uppercase tracking-[0.05em] text-gray-500">
               <th className="py-2 pr-3 font-medium">Method</th>
               <th className="px-2 py-2 text-right font-medium">Attempts</th>
               <th className="px-2 py-2 text-right font-medium">Captured</th>

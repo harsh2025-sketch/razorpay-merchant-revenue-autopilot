@@ -109,9 +109,7 @@ describe("Task 21C one-click experiment", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText(
-          "Cycle complete. The result was inconclusive - insufficient evidence to keep or roll back the treatment.",
-        ),
+        screen.getByText("Cycle complete · result inconclusive."),
       ).toBeInTheDocument();
     });
 

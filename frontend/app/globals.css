@@ -7,7 +7,7 @@
 }
 
 body {
-  font-feature-settings: "cv11", "ss01";
+  background: #f9fafb;
 }
 
 /* Single restrained entrance treatment; no animation libraries. */
