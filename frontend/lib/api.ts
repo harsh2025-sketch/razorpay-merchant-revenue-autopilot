@@ -43,10 +43,6 @@ const GENERIC_MESSAGE = "The request could not be completed.";
 const NETWORK_MESSAGE = "Unable to connect to Revenue Autopilot.";
 const OVERVIEW_SERVER_REVALIDATE_SECONDS = 60;
 
-type NextRequestInit = RequestInit & {
-  next?: { revalidate?: number };
-};
-
 async function request<T>(
   path: string,
   init?: RequestInit,
@@ -59,13 +55,16 @@ async function request<T>(
     method === "GET" &&
     serverRevalidateSeconds != null;
 
-  const requestInit: NextRequestInit = {
+  const requestInit: RequestInit = {
     headers: { Accept: "application/json" },
     ...init,
-    ...(useServerCache
-      ? { next: { revalidate: serverRevalidateSeconds } }
-      : { cache: "no-store" as const }),
   };
+
+  if (useServerCache) {
+    requestInit.next = { revalidate: serverRevalidateSeconds };
+  } else {
+    requestInit.cache = "no-store";
+  }
 
   try {
     response = await fetch(`${API_BASE_URL}${path}`, requestInit);
