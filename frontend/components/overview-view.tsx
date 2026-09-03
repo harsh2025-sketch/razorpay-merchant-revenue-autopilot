@@ -29,6 +29,9 @@ function isOneClickExperimentAction(action: string | null): boolean {
  * three decision-useful metrics and segment conversion evidence. Detailed
  * payment-method evidence and the full audit ledger remain available on their
  * dedicated product surfaces instead of being duplicated here.
+ *
+ * `initialAudit` remains accepted for compatibility with existing callers and
+ * tests, but it is intentionally not rendered or refetched on this page.
  */
 export function OverviewView({
   initialOverview,
@@ -36,6 +39,7 @@ export function OverviewView({
 }: {
   initialOverview: MerchantOverview;
   initialDetectionReady?: boolean;
+  initialAudit?: unknown;
 }) {
   const merchantId = initialOverview.merchant.merchant_id;
   const [overview, setOverview] = useState(initialOverview);
