@@ -29,7 +29,11 @@ export function SegmentConversionChart({
     .sort((a, b) => (b.conversion_rate ?? 0) - (a.conversion_rate ?? 0));
 
   const weakest =
-    data.length > 0 ? data.reduce((a, b) => (a.conversion_rate ?? 1) <= (b.conversion_rate ?? 1) ? a : b) : null;
+    data.length > 0
+      ? data.reduce((a, b) =>
+          (a.conversion_rate ?? 1) <= (b.conversion_rate ?? 1) ? a : b,
+        )
+      : null;
 
   if (data.length === 0) {
     return (
@@ -41,17 +45,12 @@ export function SegmentConversionChart({
 
   return (
     <section className="rounded-lg border border-gray-200 bg-white p-5">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h2 className="text-[16px] font-semibold text-gray-900">
-            Segment Conversion
-          </h2>
-          <p className="mt-0.5 text-[13px] text-gray-500">
-            Observed payment conversion by customer segment.
-          </p>
-        </div>
-        <p className="shrink-0 text-[11px] uppercase tracking-wider text-gray-400">
-          Observed
+      <div>
+        <h2 className="text-[16px] font-semibold text-gray-900">
+          Segment Conversion
+        </h2>
+        <p className="mt-0.5 text-[13px] text-gray-500">
+          Observed payment conversion by customer segment.
         </p>
       </div>
       <div className="mt-4" data-testid="segment-chart">
@@ -89,11 +88,20 @@ export function SegmentConversionChart({
                 padding: "6px 10px",
               }}
             />
-            <Bar dataKey="conversion_rate" barSize={16} radius={[0, 3, 3, 0]} isAnimationActive={false}>
+            <Bar
+              dataKey="conversion_rate"
+              barSize={10}
+              radius={[9999, 9999, 9999, 9999]}
+              isAnimationActive={false}
+            >
               {data.map((entry) => (
                 <Cell
                   key={entry.segment}
-                  fill={weakest != null && entry.segment === weakest.segment ? "#3730A3" : "#6366F1"}
+                  fill={
+                    weakest != null && entry.segment === weakest.segment
+                      ? "#3730A3"
+                      : "#6366F1"
+                  }
                 />
               ))}
               <LabelList
