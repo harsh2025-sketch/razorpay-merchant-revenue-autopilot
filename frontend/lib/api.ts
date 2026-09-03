@@ -41,15 +41,34 @@ export class ApiError extends Error {
 
 const GENERIC_MESSAGE = "The request could not be completed.";
 const NETWORK_MESSAGE = "Unable to connect to Revenue Autopilot.";
+const OVERVIEW_SERVER_REVALIDATE_SECONDS = 60;
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
+type NextRequestInit = RequestInit & {
+  next?: { revalidate?: number };
+};
+
+async function request<T>(
+  path: string,
+  init?: RequestInit,
+  serverRevalidateSeconds?: number,
+): Promise<T> {
   let response: Response;
+  const method = (init?.method ?? "GET").toUpperCase();
+  const useServerCache =
+    typeof window === "undefined" &&
+    method === "GET" &&
+    serverRevalidateSeconds != null;
+
+  const requestInit: NextRequestInit = {
+    headers: { Accept: "application/json" },
+    ...init,
+    ...(useServerCache
+      ? { next: { revalidate: serverRevalidateSeconds } }
+      : { cache: "no-store" as const }),
+  };
+
   try {
-    response = await fetch(`${API_BASE_URL}${path}`, {
-      cache: "no-store",
-      headers: { Accept: "application/json" },
-      ...init,
-    });
+    response = await fetch(`${API_BASE_URL}${path}`, requestInit);
   } catch {
     throw new ApiError("NETWORK_ERROR", NETWORK_MESSAGE);
   }
@@ -90,7 +109,11 @@ export function getMerchant(merchantId: string): Promise<MerchantSummary> {
 }
 
 export function getOverview(merchantId: string): Promise<MerchantOverview> {
-  return request<MerchantOverview>(API_PATHS.overview(merchantId));
+  return request<MerchantOverview>(
+    API_PATHS.overview(merchantId),
+    undefined,
+    OVERVIEW_SERVER_REVALIDATE_SECONDS,
+  );
 }
 
 export function getMerchantIntelligence(
