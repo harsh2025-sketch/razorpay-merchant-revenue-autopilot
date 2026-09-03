@@ -10,8 +10,8 @@ const config: Config = {
     extend: {
       fontFamily: {
         sans: [
-          "var(--font-sans)",
-          "Inter",
+          "var(--font-source-sans)",
+          "Source Sans 3",
           "ui-sans-serif",
           "system-ui",
           "-apple-system",
