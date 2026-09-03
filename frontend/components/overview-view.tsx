@@ -4,21 +4,18 @@ import { useCallback, useEffect, useState } from "react";
 import {
   advanceAutopilot,
   getDetectionReadiness,
-  getMerchantAudit,
   getOverview,
   runExperimentToDecision,
   startNewAutopilotCycle,
 } from "@/lib/api";
-import { DEFAULT_MERCHANT_ID, RECENT_ACTIVITY_LIMIT } from "@/lib/constants";
+import { DEFAULT_MERCHANT_ID } from "@/lib/constants";
 import { describeApiError, type DescribedError } from "@/lib/errors";
 import { formatInrPaise, formatInt, formatPercent } from "@/lib/format";
-import type { AuditEvent, AutopilotState, MerchantOverview } from "@/lib/types";
+import type { AutopilotState, MerchantOverview } from "@/lib/types";
 import { AutopilotStatus } from "./autopilot-status";
 import { InlineError } from "./inline-error";
 import { LoadingButton } from "./loading-button";
 import { MetricCell } from "./metric-cell";
-import { PaymentMethodTable } from "./payment-method-table";
-import { RecentActivity } from "./recent-activity";
 import { SegmentConversionChart } from "./segment-conversion-chart";
 
 function isOneClickExperimentAction(action: string | null): boolean {
@@ -26,25 +23,22 @@ function isOneClickExperimentAction(action: string | null): boolean {
 }
 
 /**
- * Overview client state container.
+ * Focused Overview client state container.
  *
- * The server sends the critical merchant Overview first. Audit preview and
- * detector readiness are hydrated afterwards so slow auxiliary reads never
- * delay the useful first paint. Mutations still perform a full uncached refresh
- * before the next user action is exposed.
+ * The Overview intentionally shows only the merchant's current Autopilot state,
+ * three decision-useful metrics and segment conversion evidence. Detailed
+ * payment-method evidence and the full audit ledger remain available on their
+ * dedicated product surfaces instead of being duplicated here.
  */
 export function OverviewView({
   initialOverview,
-  initialAudit,
   initialDetectionReady,
 }: {
   initialOverview: MerchantOverview;
-  initialAudit?: AuditEvent[];
   initialDetectionReady?: boolean;
 }) {
   const merchantId = initialOverview.merchant.merchant_id;
   const [overview, setOverview] = useState(initialOverview);
-  const [audit, setAudit] = useState<AuditEvent[]>(initialAudit ?? []);
   const [detectionReady, setDetectionReady] = useState(
     initialDetectionReady ?? true,
   );
@@ -60,24 +54,23 @@ export function OverviewView({
   const [viewCycleHref, setViewCycleHref] = useState<string | null>(null);
 
   useEffect(() => {
-    if (initialAudit !== undefined && initialDetectionReady !== undefined) return;
+    if (initialDetectionReady !== undefined) return;
 
     let active = true;
-    void Promise.allSettled([
-      getMerchantAudit(merchantId, RECENT_ACTIVITY_LIMIT),
-      getDetectionReadiness(merchantId),
-    ]).then(([auditResult, readinessResult]) => {
-      if (!active) return;
-      if (auditResult.status === "fulfilled") setAudit(auditResult.value);
-      if (readinessResult.status === "fulfilled") {
-        setDetectionReady(readinessResult.value.ready);
-      }
-    });
+    void getDetectionReadiness(merchantId).then(
+      (readiness) => {
+        if (active) setDetectionReady(readiness.ready);
+      },
+      () => {
+        // Overview data remains useful even if this auxiliary readiness read
+        // fails; the next explicit action will still be validated by backend.
+      },
+    );
 
     return () => {
       active = false;
     };
-  }, [initialAudit, initialDetectionReady, merchantId]);
+  }, [initialDetectionReady, merchantId]);
 
   const status = overview.autopilot_status;
   const waitingForData =
@@ -88,14 +81,12 @@ export function OverviewView({
   const effectiveNextAction =
     waitingForData || waitingForLiveOutcomes ? null : status.next_action;
 
-  const refreshOverviewAndAudit = useCallback(async () => {
-    const [freshOverview, freshAudit, freshReadiness] = await Promise.all([
+  const refreshOverviewState = useCallback(async () => {
+    const [freshOverview, freshReadiness] = await Promise.all([
       getOverview(merchantId),
-      getMerchantAudit(merchantId, RECENT_ACTIVITY_LIMIT),
       getDetectionReadiness(merchantId),
     ]);
     setOverview(freshOverview);
-    setAudit(freshAudit);
     setDetectionReady(freshReadiness.ready);
     return freshOverview;
   }, [merchantId]);
@@ -139,14 +130,14 @@ export function OverviewView({
     }
 
     try {
-      await refreshOverviewAndAudit();
+      await refreshOverviewState();
     } catch (caught) {
       setError(describeApiError(caught));
       setErrorKind("refresh");
     } finally {
       setActionLoading(false);
     }
-  }, [merchantId, refreshOverviewAndAudit, status]);
+  }, [merchantId, refreshOverviewState, status]);
 
   const handleStartNewCycle = useCallback(async () => {
     setError(null);
@@ -175,32 +166,29 @@ export function OverviewView({
     }
 
     try {
-      await refreshOverviewAndAudit();
+      await refreshOverviewState();
     } catch (caught) {
       setError(describeApiError(caught));
       setErrorKind("refresh");
     } finally {
       setRestartLoading(false);
     }
-  }, [merchantId, refreshOverviewAndAudit]);
+  }, [merchantId, refreshOverviewState]);
 
   const refreshAll = useCallback(async () => {
     setError(null);
     setRefreshing(true);
     try {
-      await refreshOverviewAndAudit();
+      await refreshOverviewState();
     } catch (caught) {
       setError(describeApiError(caught));
       setErrorKind("refresh");
     } finally {
       setRefreshing(false);
     }
-  }, [refreshOverviewAndAudit]);
+  }, [refreshOverviewState]);
 
   const metrics = overview.metrics;
-  const weakest = [...overview.segment_metrics]
-    .filter((s) => typeof s.conversion_rate === "number")
-    .sort((a, b) => (a.conversion_rate ?? 1) - (b.conversion_rate ?? 1))[0];
 
   const activeCycleValue = waitingForData
     ? "Awaiting data"
@@ -251,27 +239,20 @@ export function OverviewView({
 
       <section
         aria-label="Merchant metrics"
-        className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-slate-200 bg-slate-200 shadow-[0_10px_35px_rgba(15,23,42,0.05)] lg:grid-cols-4"
+        className="grid overflow-hidden rounded-xl border border-slate-200 bg-slate-200 shadow-[0_10px_35px_rgba(15,23,42,0.05)] sm:grid-cols-3 sm:gap-px"
       >
-        <div className="bg-gradient-to-br from-white to-indigo-50/35">
+        <div className="border-b border-slate-200 bg-gradient-to-br from-white to-indigo-50/35 sm:border-b-0">
           <MetricCell
             label="Baseline Conversion"
             value={formatPercent(metrics.conversion_rate)}
             sub={`${formatInt(metrics.captured)} of ${formatInt(metrics.attempts)} captured`}
           />
         </div>
-        <div className="bg-gradient-to-br from-white to-emerald-50/30">
+        <div className="border-b border-slate-200 bg-gradient-to-br from-white to-emerald-50/30 sm:border-b-0">
           <MetricCell
             label="Captured GMV"
             value={formatInrPaise(overview.captured_gmv_paise)}
             sub={`of ${formatInrPaise(overview.attempted_gmv_paise)} attempted`}
-          />
-        </div>
-        <div className="bg-gradient-to-br from-white to-amber-50/30">
-          <MetricCell
-            label="Weakest Segment"
-            value={weakest ? formatPercent(weakest.conversion_rate) : "-"}
-            sub={weakest ? weakest.segment : "No segment data"}
           />
         </div>
         <div className="bg-gradient-to-br from-white to-sky-50/40">
@@ -283,33 +264,7 @@ export function OverviewView({
         </div>
       </section>
 
-      <section
-        aria-label="Autopilot trust chain"
-        className="overflow-hidden rounded-xl border border-slate-200 bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-950 px-4 py-3 shadow-[0_10px_30px_rgba(30,41,59,0.12)]"
-      >
-        <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-300 sm:justify-between">
-          <span className="text-white">Evidence</span>
-          <span className="text-indigo-400">→</span>
-          <span>AI proposes</span>
-          <span className="text-indigo-400">→</span>
-          <span>Policy authorizes</span>
-          <span className="text-indigo-400">→</span>
-          <span>Razorpay executes</span>
-          <span className="text-indigo-400">→</span>
-          <span className="text-white">Statistics decides</span>
-        </div>
-      </section>
-
-      <div className="grid gap-5 xl:grid-cols-5">
-        <div className="xl:col-span-3">
-          <SegmentConversionChart segments={overview.segment_metrics} />
-        </div>
-        <div className="xl:col-span-2">
-          <PaymentMethodTable methods={overview.payment_method_metrics} />
-        </div>
-      </div>
-
-      <RecentActivity events={audit} chainValid={overview.audit_chain_valid} />
+      <SegmentConversionChart segments={overview.segment_metrics} />
 
       <div className="flex justify-end">
         <LoadingButton
