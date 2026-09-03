@@ -10,9 +10,8 @@ import type { AutopilotNextAction } from "@/lib/types";
 import { LoadingButton } from "./loading-button";
 
 /**
- * The single context-aware lifecycle button. One click = exactly one backend
- * transition. Terminal states (STOP / DONE) and the fail-closed mapping state
- * render as disabled buttons - never as a hidden mutation.
+ * The single context-aware lifecycle action. Active states render a mutation
+ * button; terminal DONE is presented as status, not as an actionable control.
  */
 export function PrimaryAutopilotAction({
   action,
@@ -31,11 +30,27 @@ export function PrimaryAutopilotAction({
   const label = actionLabel(action);
   if (!label) return null;
 
+  if (action === "DONE") {
+    return (
+      <button
+        type="button"
+        disabled
+        aria-label={label}
+        title="No further Autopilot action is available."
+        className={`inline-flex cursor-default items-center justify-center rounded-md bg-gray-100 px-3.5 py-2 text-[13px] font-medium text-gray-700 opacity-100 ${
+          size === "compact" ? "px-3 py-1.5 text-[12.5px]" : ""
+        }`}
+      >
+        {label}
+      </button>
+    );
+  }
+
   if (disabled) {
     return (
       <LoadingButton
         disabled
-        variant={action === "DONE" ? "outline" : "outline"}
+        variant="outline"
         title={
           action === "CONFIGURE_OFFER_MAPPING"
             ? "Deployment is blocked until the intervention is mapped to a verified Razorpay resource."
