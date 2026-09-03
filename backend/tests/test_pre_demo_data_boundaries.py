@@ -1,8 +1,8 @@
 """Regression tests for judge-visible merchant data and lifecycle boundaries."""
 
-from datetime import timezone
+from datetime import datetime, timedelta, timezone
 
-from app.db.models import PaymentAttempt
+from app.db.models import ExperimentResult, PaymentAttempt
 from app.engines.metrics import (
     get_amount_bucket_metrics,
     get_failure_reason_counts,
@@ -11,6 +11,7 @@ from app.engines.metrics import (
     get_segment_metrics,
 )
 from app.services.autopilot import gmv_totals
+from app.services.memory import get_merchant_experiment_memory
 from app.simulation.runner import RUNTIME_ANCHOR, run_experiment_batch
 from tests.test_experiment_runtime import db_session, make_experiment
 
@@ -124,3 +125,50 @@ def test_simulator_clock_does_not_backdate_experiment_lifecycle(db_session):
     )
     assert experimental_rows
     assert all(_as_utc(row.created_at).date() == RUNTIME_ANCHOR.date() for row in experimental_rows)
+
+
+def test_memory_repairs_legacy_simulator_lifecycle_timestamps(db_session):
+    """Existing demo rows display real lifecycle chronology without a DB rewrite."""
+    created_at = datetime(2026, 8, 30, 17, 1, tzinfo=timezone.utc)
+    decided_at = datetime(2026, 8, 30, 17, 10, tzinfo=timezone.utc)
+
+    experiment = make_experiment(
+        db_session,
+        status="completed",
+        segment="android_budget",
+        intervention_type="expiry_config",
+        treatment_config={"expiry_hours": 24},
+        control_config={"expiry_hours": "merchant_default"},
+        traffic_split=0.10,
+        min_sample=200,
+    )
+    experiment.created_at = created_at
+    experiment.started_at = RUNTIME_ANCHOR
+    experiment.ended_at = RUNTIME_ANCHOR + timedelta(minutes=30)
+    db_session.add(
+        ExperimentResult(
+            experiment_id=experiment.id,
+            control_count=200,
+            treatment_count=200,
+            control_conversions=100,
+            treatment_conversions=100,
+            control_rate=0.5,
+            treatment_rate=0.5,
+            absolute_lift=0.0,
+            relative_lift=0.0,
+            p_value=1.0,
+            confidence_interval_lower=-0.10,
+            confidence_interval_upper=0.10,
+            is_significant=False,
+            decision="INCONCLUSIVE",
+            decided_at=decided_at,
+        )
+    )
+    db_session.flush()
+
+    memory = get_merchant_experiment_memory(db_session, experiment.merchant_id)
+    record = next(row for row in memory.records if row.experiment_id == experiment.id)
+
+    assert _as_utc(record.created_at) == created_at
+    assert _as_utc(record.started_at) == created_at
+    assert _as_utc(record.ended_at) == decided_at
